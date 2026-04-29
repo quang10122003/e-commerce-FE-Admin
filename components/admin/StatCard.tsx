@@ -23,7 +23,6 @@ export function StatCard({
   tone = "blue",
 }: StatCardProps) {
   return (
-
     <article className="panel">
       <div className="flex items-start justify-between gap-3">
         <div>

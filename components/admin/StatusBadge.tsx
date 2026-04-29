@@ -17,7 +17,6 @@ const toneStyles: Record<Tone, string> = {
 
 export function StatusBadge({ children, tone = "neutral" }: StatusBadgeProps) {
   return (
-
     <span className={`chip ${toneStyles[tone]}`}>
       {children}
     </span>

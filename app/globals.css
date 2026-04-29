@@ -11,6 +11,7 @@
   --danger-soft: #ffe9e9;
   --warning-soft: #fff6e4;
   --success-soft: #e7f8ef;
+  --color-error: #dc2626;
 }
 
 @theme inline {
@@ -18,6 +19,8 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-be-vietnam);
   --font-mono: var(--font-jetbrains);
+
+  --color-error: var(--color-error);
 }
 
 * {
@@ -33,6 +36,23 @@ body {
 }
 
 @layer utilities {
+  /* Hieu ung vao panel edit khi user vua bat dau chinh sua. */
+  @keyframes user-edit-panel-in {
+    from {
+      opacity: 0;
+      transform: translateX(40px);
+    }
+
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+
+  .animate-user-edit-panel-in {
+    animation: user-edit-panel-in 240ms ease-out;
+  }
+
   .panel {
     @apply rounded-2xl border p-5 shadow-sm;
     border-color: var(--panel-border);
@@ -67,5 +87,50 @@ body {
   .chip-danger {
     color: #991b1b;
     background: var(--danger-soft);
+  }
+
+  .field-input {
+    @apply w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none transition focus:border-blue-400;
+  }
+
+  .field-inline {
+    @apply w-auto;
+  }
+
+  .field-input-compact {
+    @apply h-10 px-4;
+  }
+
+  .field-select {
+    @apply rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none transition focus:border-blue-400;
+  }
+
+  .field-textarea {
+    @apply w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none transition focus:border-blue-400;
+  }
+
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold text-white transition hover:brightness-110;
+    background: var(--primary);
+  }
+
+  .btn-outline {
+    @apply rounded-lg border border-slate-200 px-2.5 py-1 text-xs font-medium text-slate-700 transition hover:bg-slate-100;
+  }
+
+  .btn-outline-danger {
+    @apply rounded-lg border border-rose-200 px-2.5 py-1 text-xs font-medium text-rose-700 transition hover:bg-rose-50;
+  }
+
+  .card-subtle {
+    @apply rounded-2xl border border-slate-200 bg-white p-4;
+  }
+
+  .card-item {
+    @apply flex items-center justify-between rounded-xl border border-slate-200 px-3 py-2 text-sm;
+  }
+
+  .section-title {
+    @apply text-lg font-semibold text-slate-900;
   }
 }

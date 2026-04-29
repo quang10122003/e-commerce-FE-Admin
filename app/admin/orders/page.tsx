@@ -79,11 +79,11 @@ export default function OrdersPage() {
       <article className="panel mt-6">
         <div className="flex flex-wrap items-center gap-3">
           <input
-            className="h-10 flex-1 rounded-xl border border-slate-200 bg-white px-4 text-sm outline-none focus:border-blue-400"
+            className="field-input field-inline field-input-compact flex-1"
             placeholder="Tim theo order id / so dien thoai..."
             type="text"
           />
-          <select className="h-10 rounded-xl border border-slate-200 bg-white px-3 text-sm">
+          <select className="field-select h-10">
             <option>Tat ca status</option>
             <option>PENDING</option>
             <option>SHIPPING</option>
@@ -94,7 +94,7 @@ export default function OrdersPage() {
 
         <div className="mt-5 space-y-4">
           {orders.map((order) => (
-            <div className="rounded-2xl border border-slate-200 bg-white p-4" key={order.id}>
+            <div className="card-subtle" key={order.id}>
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
                   <p className="text-sm text-slate-500">Order ID</p>
@@ -127,10 +127,7 @@ export default function OrdersPage() {
                   <p className="text-sm font-semibold text-slate-800">Order items</p>
                   <div className="mt-3 space-y-2">
                     {order.items.map((item, index) => (
-                      <div
-                        className="flex items-center justify-between rounded-xl border border-slate-200 px-3 py-2 text-sm"
-                        key={`${order.id}-${index + 1}`}
-                      >
+                      <div className="card-item" key={`${order.id}-${index + 1}`}>
                         <div>
                           <p className="font-medium text-slate-800">{item.name}</p>
                           <p className="text-xs text-slate-500">{item.category}</p>
@@ -159,16 +156,10 @@ export default function OrdersPage() {
                   </div>
 
                   <div className="mt-4 flex items-center gap-2">
-                    <button
-                      className="rounded-lg border border-slate-200 px-2.5 py-1 text-xs font-medium text-slate-700"
-                      type="button"
-                    >
+                    <button className="btn-outline" type="button">
                       Cap nhat status
                     </button>
-                    <button
-                      className="rounded-lg border border-rose-200 px-2.5 py-1 text-xs font-medium text-rose-700"
-                      type="button"
-                    >
+                    <button className="btn-outline-danger" type="button">
                       Huy don
                     </button>
                   </div>

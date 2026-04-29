@@ -22,10 +22,7 @@ export function PageHeader({
       </div>
 
       {actionHref && actionLabel ? (
-        <Link
-          className="inline-flex items-center gap-2 rounded-xl bg-(--primary) px-4 py-2.5 text-sm font-semibold text-white transition hover:brightness-110"
-          href={actionHref}
-        >
+        <Link className="btn-primary" href={actionHref}>
           <Plus className="size-4" />
           {actionLabel}
         </Link>
