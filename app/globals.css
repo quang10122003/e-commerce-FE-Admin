@@ -49,8 +49,63 @@ body {
     }
   }
 
+  @keyframes browser-notification-in {
+    from {
+      opacity: 0;
+      transform: translateX(calc(100% + 32px)) scale(0.98);
+    }
+
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+
+  @keyframes browser-notification-out {
+    from {
+      opacity: 1;
+      transform: translateX(0);
+    }
+
+    to {
+      opacity: 0;
+      transform: translateX(calc(100% + 32px)) scale(0.98);
+    }
+  }
+
+  @keyframes browser-notification-progress {
+    from {
+      width: 100%;
+    }
+
+    to {
+      width: 0%;
+    }
+  }
+
   .animate-user-edit-panel-in {
     animation: user-edit-panel-in 240ms ease-out;
+  }
+
+  .animate-browser-notification-in {
+    animation: browser-notification-in 320ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+
+  .animate-browser-notification-out {
+    animation: browser-notification-out 220ms ease-in both;
+  }
+
+  .browser-notification-card {
+    transition:
+      margin 220ms ease,
+      transform 220ms ease,
+      opacity 180ms ease;
+  }
+
+  .browser-notification-progress {
+    animation-name: browser-notification-progress;
+    animation-timing-function: linear;
+    animation-fill-mode: forwards;
   }
 
   .panel {

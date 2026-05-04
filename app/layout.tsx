@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Be_Vietnam_Pro, JetBrains_Mono } from "next/font/google";
+import { AppProviders } from "@/client/providers";
 import "./globals.css";
 
 const beVietnam = Be_Vietnam_Pro({
@@ -31,7 +32,9 @@ export default function RootLayout({
       lang="en"
       className={`${beVietnam.variable} ${jetbrainsMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full font-sans text-slate-800">{children}</body>
+      <body className="min-h-full font-sans text-slate-800">
+        <AppProviders>{children}</AppProviders>
+      </body>
     </html>
   );
 }

@@ -4,9 +4,9 @@ import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { Lock, ShieldCheck } from "lucide-react";
-import { ADMIN_ROLE } from "@/lib/auth/constants";
-import { getApiErrorMessage, getAxiosErrorMessage } from "@/lib/axios/error";
-import { login } from "@/services/auth.service";
+import { useLoginMutation } from "@/client/api/backend-api";
+import { getApiErrorMessage } from "@/lib/util/api-error";
+import { ADMIN_ROLE } from "@/types/auth";
 
 type LoginFormValues = {
   email: string;
@@ -14,16 +14,16 @@ type LoginFormValues = {
 };
 
 const ADMIN_DASHBOARD_PATH = "/admin/dashboard";
-const DEFAULT_LOGIN_ERROR_MESSAGE = "Dang nhap that bai. Vui long thu lai.";
+const DEFAULT_LOGIN_ERROR_MESSAGE = "Đăng nhập thất bại. Vui lòng thử lại.";
 
 export function LoginPageClient() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [isLoginLoading, setIsLoginLoading] = useState(false);
+  const [login, { isLoading: isLoginLoading }] = useLoginMutation();
   const [submitError, setSubmitError] = useState<string>("");
   const reasonError =
     searchParams.get("reason") === "forbidden"
-      ? "Tai khoan khong co quyen ADMIN."
+      ? "Tài khoản không có quyền ADMIN."
       : "";
 
   const {
@@ -37,13 +37,13 @@ export function LoginPageClient() {
 
   async function onSubmit(data: LoginFormValues) {
     setSubmitError("");
-    setIsLoginLoading(true);
 
     try {
+      // Client chỉ gọi Next API proxy; proxy sẽ gọi backend và tự set cookie httpOnly.
       const payload = await login({
         email: data.email,
         password: data.password,
-      });
+      }).unwrap();
 
       if (!payload?.success) {
         throw new Error(getApiErrorMessage(payload));
@@ -54,19 +54,18 @@ export function LoginPageClient() {
       }
 
       if (payload.data.role !== ADMIN_ROLE) {
-        throw new Error("Tai khoan khong co quyen ADMIN.");
+        throw new Error("Tài khoản không có quyền ADMIN.");
       }
 
       const nextPath = searchParams.get("next");
-      const redirectPath = nextPath && nextPath.startsWith("/admin")
-        ? nextPath
-        : ADMIN_DASHBOARD_PATH;
-
+      const redirectPath =
+        nextPath && nextPath.startsWith("/admin")
+          ? nextPath
+          : ADMIN_DASHBOARD_PATH;
+          
       router.replace(redirectPath);
     } catch (error) {
-      setSubmitError(getAxiosErrorMessage(error, DEFAULT_LOGIN_ERROR_MESSAGE));
-    } finally {
-      setIsLoginLoading(false);
+      setSubmitError(getApiErrorMessage(error, DEFAULT_LOGIN_ERROR_MESSAGE));
     }
   }
 
@@ -80,25 +79,25 @@ export function LoginPageClient() {
               MyShop Dashboard
             </h1>
             <p className="mt-3 text-slate-600">
-              Dang nhap de truy cap trang quan tri users, products, orders,
-              payments va chat.
+              Đăng nhập để truy cập trang quản trị users, products, orders,
+              payments và chat.
             </p>
           </div>
 
           <div className="grid gap-3 text-sm">
             <div className="panel-muted flex items-center gap-3">
               <ShieldCheck className="size-5 text-emerald-600" />
-              <span>Chi user co role `ADMIN` moi duoc truy cap.</span>
+              <span>Chỉ user có role `ADMIN` mới được truy cập.</span>
             </div>
             <div className="panel-muted flex items-center gap-3">
               <Lock className="size-5 text-indigo-600" />
-              <span>Session duoc backend cap sau khi dang nhap thanh cong.</span>
+              <span>Session được backend cấp sau khi đăng nhập thành công.</span>
             </div>
           </div>
         </article>
 
         <article className="panel">
-          <h2 className="text-xl font-semibold text-slate-900">Dang nhap admin</h2>
+          <h2 className="text-xl font-semibold text-slate-900">Đăng nhập admin</h2>
 
           <form
             className="mt-6 space-y-4"
@@ -112,11 +111,11 @@ export function LoginPageClient() {
                 autoComplete="email"
                 className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 outline-none focus:border-blue-400"
                 {...register("email", {
-                  required: "Vui long dien email",
                   pattern: {
+                    message: "Email không đúng định dạng",
                     value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
-                    message: "Email khong dung dinh dang",
                   },
+                  required: "Vui lòng điền email",
                 })}
               />
               {errors.email && (
@@ -125,17 +124,17 @@ export function LoginPageClient() {
             </label>
 
             <label className="block space-y-2 text-sm font-medium">
-              <span>Mat khau</span>
+              <span>Mật khẩu</span>
               <input
                 type="password"
                 autoComplete="current-password"
                 className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 outline-none focus:border-blue-400"
                 {...register("password", {
-                  required: "Vui long dien mat khau",
                   minLength: {
+                    message: "Mật khẩu tối thiểu 6 ký tự",
                     value: 6,
-                    message: "Mat khau toi thieu 6 ky tu",
                   },
+                  required: "Vui lòng điền mật khẩu",
                 })}
               />
               {errors.password && (
@@ -154,7 +153,7 @@ export function LoginPageClient() {
               disabled={isSubmitting || isLoginLoading}
               className="w-full rounded-xl bg-(--primary) px-4 py-2.5 font-semibold text-white hover:brightness-110 disabled:opacity-70 cursor-pointer"
             >
-              {isSubmitting || isLoginLoading ? "Dang xu ly..." : "Dang nhap"}
+              {isSubmitting || isLoginLoading ? "Đang xử lý..." : "Đăng nhập"}
             </button>
           </form>
         </article>

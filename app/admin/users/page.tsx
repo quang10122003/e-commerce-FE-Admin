@@ -1,12 +1,5 @@
 import { UsersPageClient } from "./UsersPageClient";
-import { getRoleUser } from "@/services/role-server.service";
-import { safeFetch } from "@/services/server.service";
-import {
-  getAdminUsers,
-  parseAdminUsersFilters,
-} from "@/services/users-server.service";
-import type { roleState, roleType } from "@/types/role/role";
-import type { UserListData } from "@/types/user/User";
+import { parseAdminUsersFilters } from "@/server/admin-users";
 
 type UsersPageProps = {
   searchParams: Promise<{
@@ -18,42 +11,24 @@ export default async function UsersPage({ searchParams }: UsersPageProps) {
   const resolvedSearchParams = await searchParams;
   const filters = parseAdminUsersFilters(resolvedSearchParams);
 
-  // Lay id tu query edit de refresh trang van mo dung user dang sua.
+  // Lấy id từ query edit để khi refresh trang vẫn mở đúng user đang sửa.
   const rawEditingUserId = Number.parseInt(
     Array.isArray(resolvedSearchParams.edit)
       ? (resolvedSearchParams.edit[0] ?? "")
       : (resolvedSearchParams.edit ?? ""),
     10,
   );
+
   const editingUserId =
     Number.isFinite(rawEditingUserId) && rawEditingUserId > 0
       ? rawEditingUserId
       : null;
 
-  const [usersResult, rolesResult] = await Promise.all([
-    safeFetch<UserListData>(
-      () => getAdminUsers(filters),
-      "Khong the tai danh sach user",
-    ),
-    safeFetch<roleType[]>(
-      () => getRoleUser(),
-      "Khong the tai roles",
-    ),
-  ]);
-
-  const roleState: roleState = {
-    data: rolesResult.data,
-    isLoading: false,
-    error: rolesResult.error,
-  };
-
   return (
     <UsersPageClient
       editingUserId={editingUserId}
-      errorMessage={usersResult.error}
       filters={filters}
-      roleState={roleState}
-      usersData={usersResult.data}
+      key={`${filters.search}:${filters.roleFilter}:${filters.statusFilter}:${filters.currentPage}:${editingUserId ?? "none"}`}
     />
   );
 }

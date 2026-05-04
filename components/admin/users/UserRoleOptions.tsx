@@ -1,8 +1,8 @@
-import type { roleState } from "@/types/role/role";
+import type { RoleState } from "@/types/roles";
 
 type UserRoleOptionsProps = {
   includeAllOption?: boolean;
-  roleState: roleState;
+  roleState: RoleState;
 };
 
 export function UserRoleOptions({

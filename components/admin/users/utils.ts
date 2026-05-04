@@ -1,4 +1,4 @@
-import type { AdminUsersFilters } from "@/services/users-server.service";
+import type { AdminUsersFilters } from "@/types/users";
 
 export function buildUsersPageQuery(
   filters: AdminUsersFilters,

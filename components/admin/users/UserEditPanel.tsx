@@ -1,11 +1,11 @@
-import { UserPlus, X } from "lucide-react";
+import { Save, X } from "lucide-react";
 import { useForm } from "react-hook-form";
-import type { roleState } from "@/types/role/role";
-import type { UserItem } from "@/types/user/User";
+import type { RoleState } from "@/types/roles";
+import type { UpdateUserRequest, UserItem } from "@/types/users";
 import { UserRoleOptions } from "./UserRoleOptions";
 
 type UserEditFormValues = {
-  id:number
+  id: number;
   email: string;
   fullName: string;
   role: string;
@@ -13,13 +13,17 @@ type UserEditFormValues = {
 
 type UserEditPanelProps = {
   editingUser: UserItem | null;
+  isSaving?: boolean;
   onClose: () => void;
-  roleState: roleState;
+  onSaveUser: (userId: number, data: UpdateUserRequest) => Promise<void>;
+  roleState: RoleState;
 };
 
 export function UserEditPanel({
   editingUser,
+  isSaving = false,
   onClose,
+  onSaveUser,
   roleState,
 }: UserEditPanelProps) {
   const {
@@ -28,16 +32,24 @@ export function UserEditPanel({
     formState: { errors, isSubmitting },
   } = useForm<UserEditFormValues>({
     defaultValues: {
-      id:editingUser?.id ?? undefined,
       email: editingUser?.email ?? "",
       fullName: editingUser?.fullName ?? "",
+      id: editingUser?.id ?? undefined,
       role: editingUser?.role ?? "",
     },
     mode: "onBlur",
   });
 
-  function onSubmit(data: UserEditFormValues) {
-    void data;
+  async function onSubmit(data: UserEditFormValues) {
+    if (!editingUser) {
+      return;
+    }
+
+    await onSaveUser(editingUser.id, {
+      email: data.email.trim(),
+      fullName: data.fullName.trim(),
+      role: data.role,
+    });
   }
 
   if (!editingUser) {
@@ -48,14 +60,14 @@ export function UserEditPanel({
     <article className="panel animate-user-edit-panel-in self-start">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <h2 className="section-title">Chinh sua user</h2>
+          <h2 className="section-title">Chỉnh sửa user</h2>
           <p className="mt-1 text-sm text-slate-600">
-            Form UI de chinh sua thong tin user
+            Cập nhật email, họ tên và role của tài khoản.
           </p>
         </div>
 
         <button
-          aria-label="Dong form edit user"
+          aria-label="Đóng form edit user"
           className="btn-outline"
           onClick={onClose}
           type="button"
@@ -64,30 +76,33 @@ export function UserEditPanel({
         </button>
       </div>
 
-      {/* Form duoc remount theo user o component cha, nen useForm nhan dung defaultValues ma khong can reset bang effect. */}
+      {/* Form được remount theo user ở component cha, nên useForm nhận đúng defaultValues mà không cần reset bằng effect. */}
       <form className="mt-4 space-y-3" noValidate onSubmit={handleSubmit(onSubmit)}>
         <label className="block space-y-1 text-sm">
           <span className="pl-2 font-bold text-slate-700">Id</span>
           <input
-            className="field-input  bg-[#f1f5f9] text-[#94a3b8]"
-            placeholder="user@email.com"
+            className="field-input bg-[#f1f5f9] text-[#94a3b8]"
+            placeholder="ID user"
             type="number"
             {...register("id", {
-              required: "id",
+              required: "ID user là bắt buộc",
             })}
             disabled
           />
+        </label>
+
+        <label className="block space-y-1 text-sm">
           <span className="pl-2 font-bold text-slate-700">Email</span>
           <input
             className="field-input"
             placeholder="user@email.com"
             type="email"
             {...register("email", {
-              required: "Vui long nhap email",
               pattern: {
+                message: "Email không đúng định dạng",
                 value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
-                message: "Email khong dung dinh dang",
               },
+              required: "Vui lòng nhập email",
             })}
           />
           {errors.email ? (
@@ -96,17 +111,17 @@ export function UserEditPanel({
         </label>
 
         <label className="block space-y-1 text-sm">
-          <span className="pl-2 font-blod text-slate-700">Full name</span>
+          <span className="pl-2 font-bold text-slate-700">Full name</span>
           <input
             className="field-input"
             placeholder="Nguyen Van B"
             type="text"
             {...register("fullName", {
-              required: "Vui long nhap full name",
               minLength: {
+                message: "Full name phải có ít nhất 2 ký tự",
                 value: 2,
-                message: "Full name phai co it nhat 2 ky tu",
               },
+              required: "Vui lòng nhập full name",
             })}
           />
           {errors.fullName ? (
@@ -119,7 +134,7 @@ export function UserEditPanel({
           <select
             className="field-select w-full"
             {...register("role", {
-              required: "Vui long chon role",
+              required: "Vui lòng chọn role",
             })}
           >
             <UserRoleOptions roleState={roleState} />
@@ -130,14 +145,18 @@ export function UserEditPanel({
         </label>
 
         <div className="flex gap-2">
-          <button className="btn-primary w-full" disabled={isSubmitting} type="submit">
-            <X className="size-4" />
-            {isSubmitting ? "Dang luu..." : "Luu user"}
+          <button
+            className="btn-primary w-full"
+            disabled={isSubmitting || isSaving}
+            type="submit"
+          >
+            <Save className="size-4" />
+            {isSubmitting || isSaving ? "Đang lưu..." : "Lưu user"}
           </button>
 
           <button className="btn-primary w-full" onClick={onClose} type="button">
-            <UserPlus className="size-4" />
-            Huy
+            <X className="size-4" />
+            Hủy
           </button>
         </div>
       </form>

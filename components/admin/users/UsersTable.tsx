@@ -1,5 +1,5 @@
 import { StatusBadge } from "@/components/admin/StatusBadge";
-import type { UserItem } from "@/types/user/User";
+import type { UserItem } from "@/types/users";
 import { formatUserDate } from "./utils";
 
 type UsersTableProps = {

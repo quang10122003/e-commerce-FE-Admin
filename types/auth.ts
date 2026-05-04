@@ -1,0 +1,17 @@
+export const ADMIN_ROLE = "ADMIN";
+
+export interface LoginRequest {
+  email: string;
+  password: string;
+}
+
+export interface AuthResponse {
+  userId: number;
+  email: string;
+  fullName: string;
+  role: string;
+  jwt: string;
+  accessToken: string;
+  refreshToken: string;
+  tokenType: string;
+}

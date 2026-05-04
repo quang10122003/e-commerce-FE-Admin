@@ -1,6 +1,6 @@
 import type { ChangeEvent } from "react";
-import type { AdminUsersFilters } from "@/services/users-server.service";
-import type { roleState } from "@/types/role/role";
+import type { RoleState } from "@/types/roles";
+import type { AdminUsersFilters } from "@/types/users";
 import { UserRoleOptions } from "./UserRoleOptions";
 
 type UsersFiltersProps = {
@@ -8,7 +8,7 @@ type UsersFiltersProps = {
   onRoleFilterChange: (value: string) => void;
   onSearchChange: (value: string) => void;
   onStatusFilterChange: (value: string) => void;
-  roleState: roleState;
+  roleState: RoleState;
   searchInput: string;
 };
 

@@ -3,13 +3,14 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { BellRing, ChevronDown } from "lucide-react";
-import { logout } from "@/services/auth.service";
+import { useLogoutMutation } from "@/client/api/backend-api";
 import { AdminAccountMenu } from "./AdminAccountMenu";
 import { resolvePageTitle } from "./nav-items";
 
 export function AdminTopbar() {
   const router = useRouter();
   const pathname = usePathname();
+  const [logout] = useLogoutMutation();
   const [accountMenuPath, setAccountMenuPath] = useState<string | null>(null);
   const accountMenuRef = useRef<HTMLDivElement>(null);
 
@@ -57,7 +58,7 @@ export function AdminTopbar() {
 
   const handleLogoutClick = async () => {
     try {
-      await logout();
+      await logout().unwrap();
     } catch {
       // Best-effort logout.
     }
