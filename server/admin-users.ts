@@ -1,13 +1,10 @@
 import "server-only";
 
-import { getApiErrorMessage } from "@/lib/util/apiError";
 import {
   ADMIN_USERS_PAGE_SIZE,
   type AdminUsersFilters,
   type AdminUsersQueryParams,
-  type UserListData,
 } from "@/types/users";
-import { serverPrivateFetch } from "./backend-fetch";
 
 function readSearchParam(
   value: string | string[] | undefined,
@@ -77,17 +74,3 @@ export function buildAdminUsersQueryParams(filters: AdminUsersFilters) {
   } satisfies AdminUsersQueryParams;
 }
 
-// Server Component có thể gọi trực tiếp backend mà không đi vòng qua Route Handler.
-export async function getAdminUsers(filters: AdminUsersFilters) {
-  const payload = await serverPrivateFetch<UserListData>(
-    buildAdminUsersBackendPath(buildAdminUsersQueryParams(filters)),
-  );
-
-  if (!payload.success || !payload.data) {
-    throw new Error(
-      getApiErrorMessage(payload, "Không thể lấy danh sách user."),
-    );
-  }
-
-  return payload.data;
-}

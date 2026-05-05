@@ -13,7 +13,6 @@ import { usePathname, useRouter } from "next/navigation";
 import {
   useDeleteAdminUserMutation,
   useGetAdminRolesQuery,
-  useGetAdminUsersQuery,
   useUpdateAdminUserLockMutation,
   useUpdateAdminUserMutation,
 } from "@/client/api/backend-api";
@@ -28,9 +27,7 @@ import { Pagination } from "@/components/ui/Pagination";
 import { getApiErrorMessage } from "@/lib/util/apiError";
 import type { RoleState } from "@/types/roles";
 import {
-  ADMIN_USERS_PAGE_SIZE,
   type AdminUsersFilters,
-  type AdminUsersQueryParams,
   type UpdateUserRequest,
   type UserItem,
   type UserListData,
@@ -38,8 +35,12 @@ import {
 } from "@/types/users";
 
 type UsersPageClientProps = {
+  // Dữ liệu users init từ Server Component, giống cách dashboard truyền data xuống client.
+  data: UserListData | null;
   // Id user đang được mở ở panel edit, lấy từ query string của trang.
   editingUserId: number | null;
+  // Lỗi init data từ server, nếu backend không trả được danh sách users.
+  error: string | null;
   // Bộ lọc hiện tại của trang, đã được parse ở Server Component rồi truyền xuống.
   filters: AdminUsersFilters;
 };
@@ -61,27 +62,12 @@ function findEditingUser(users: UserItem[], editingUserId: number | null) {
   return users.find((user) => user.id === editingUserId) ?? null;
 }
 
-
-// Chuyển filters của UI thành params để gọi API lấy danh sách users.
-function toAdminUsersQueryParams(
-  filters: AdminUsersFilters,
-): AdminUsersQueryParams {
-  return {
-    page: Math.max(filters.currentPage - 1, 0),
-    role: filters.roleFilter === "ALL" ? undefined : filters.roleFilter,
-    search: filters.search || undefined,
-    size: ADMIN_USERS_PAGE_SIZE,
-    status: filters.statusFilter === "ALL" ? undefined : filters.statusFilter,
-  };
-}
-
-function readUsersData(payload: { success: boolean; data: UserListData | null } | undefined) {
-  // Chỉ lấy data khi backend báo success, còn lại để component dùng fallback rỗng.
-  return payload?.success ? payload.data : null;
-}
-
+// Chuyển filters của UI thành params để gọi API lấy danh sách users: phần này hiện nằm ở Server Component.
+// Chỉ lấy data khi backend báo success, còn lại để component dùng fallback rỗng: page đã chuẩn hóa thành data/error.
 export function UsersPageClient({
+  data,
   editingUserId,
+  error,
   filters,
 }: UsersPageClientProps) {
   // Router và pathname dùng để cập nhật URL khi đổi filter hoặc mở panel edit.
@@ -91,14 +77,9 @@ export function UsersPageClient({
   const { showNotification } = useNotification();
   // Đánh dấu trạng thái pending khi replace URL filter bằng transition của React.
   const [isFilterPending, startFilterTransition] = useTransition();
+  // Pending khi refresh lại Server Component sau các mutation users.
+  const [isServerRefreshPending, startServerRefreshTransition] = useTransition();
 
-  // Memo hóa query params để RTK Query không nhận object mới ở mỗi lần render.
-  const usersQueryParams = useMemo(
-    () => toAdminUsersQueryParams(filters),
-    [filters],
-  );
-  // Query lấy danh sách users theo filter hiện tại.
-  const usersQuery = useGetAdminUsersQuery(usersQueryParams);
   // Query lấy danh sách roles để render filter role và form edit user.
   const rolesQuery = useGetAdminRolesQuery();
   // Mutation xóa user theo id.
@@ -108,8 +89,8 @@ export function UsersPageClient({
   // Mutation lưu thông tin user ở panel edit.
   const [updateAdminUser] = useUpdateAdminUserMutation();
 
-  // Các biến dữ liệu suy ra từ response, luôn có fallback để tránh null-check ở JSX.
-  const usersData = readUsersData(usersQuery.data);
+  // Các biến dữ liệu suy ra từ props server, luôn có fallback để tránh null-check ở JSX.
+  const usersData = data;
   const users = usersData?.users.items ?? EMPTY_USERS;
   const stats = usersData?.stats ?? EMPTY_STATS;
   const totalItems = usersData?.users.totalItems ?? 0;
@@ -135,12 +116,8 @@ export function UsersPageClient({
     ],
   );
 
-  // Error của danh sách users, bao gồm lỗi request và lỗi success=false từ backend.
-  const errorMessage = usersQuery.isError
-    ? getApiErrorMessage(usersQuery.error, "Không thể tải danh sách user.")
-    : usersQuery.data && !usersQuery.data.success
-      ? getApiErrorMessage(usersQuery.data, "Không thể tải danh sách user.")
-      : null;
+  // Error của danh sách users lấy từ Server Component.
+  const errorMessage = error;
 
   // searchDraft giữ text người dùng đang gõ trước khi debounce cập nhật URL.
   const [searchDraft, setSearchDraft] = useState({
@@ -179,8 +156,7 @@ export function UsersPageClient({
   // Id của user đang edit, dùng để biết khi nào cần đóng panel sau mutation.
   const currentEditingUserId = editingUser?.id ?? null;
   // Loading tổng hợp cho bảng và pagination.
-  const isUsersLoading =
-    usersQuery.isLoading || usersQuery.isFetching || isFilterPending;
+  const isUsersLoading = isFilterPending || isServerRefreshPending;
 
   // Tạo URL mới từ filter và id user đang edit.
   const buildPageUrl = useCallback(
@@ -191,7 +167,7 @@ export function UsersPageClient({
     [pathname],
   );
 
-  // Gộp filter mới với filter hiện tại rồi replace URL để trigger query mới.
+  // Gộp filter mới với filter hiện tại rồi replace URL để trigger server fetch mới.
   const replaceFilters = useCallback(
     (nextFilters: Partial<AdminUsersFilters>) => {
       const mergedFilters: AdminUsersFilters = {
@@ -219,6 +195,13 @@ export function UsersPageClient({
     },
     [buildPageUrl, filters],
   );
+
+  // Refresh Server Component để lấy lại users sau khi mutation thành công.
+  const refreshUsersFromServer = useCallback(() => {
+    startServerRefreshTransition(() => {
+      router.refresh();
+    });
+  }, [router, startServerRefreshTransition]);
 
   useEffect(() => {
     // Chuẩn hóa search trước khi ghi lên URL để tránh query thừa khoảng trắng.
@@ -292,6 +275,7 @@ export function UsersPageClient({
         }
 
         showNotification("Đã xóa user thành công.", { tone: "success" });
+        refreshUsersFromServer();
       } catch (error) {
         showNotification(
           getApiErrorMessage(error, "Không thể xóa user."),
@@ -301,7 +285,13 @@ export function UsersPageClient({
         setDeletingUserId(null);
       }
     },
-    [closeEditUser, currentEditingUserId, deleteAdminUser, showNotification],
+    [
+      closeEditUser,
+      currentEditingUserId,
+      deleteAdminUser,
+      refreshUsersFromServer,
+      showNotification,
+    ],
   );
 
   // Khóa hoặc mở khóa user, đồng bộ lại panel edit nếu user đó đang được mở.
@@ -361,6 +351,7 @@ export function UsersPageClient({
             : `Đã mở khóa tài khoản ${user.email}.`,
           { tone: nextLocked ? "warning" : "success" },
         );
+        refreshUsersFromServer();
       } catch (error) {
         showNotification(
           getApiErrorMessage(error, "Không thể cập nhật trạng thái user."),
@@ -374,6 +365,7 @@ export function UsersPageClient({
       closeEditUser,
       currentEditingUserId,
       filters.statusFilter,
+      refreshUsersFromServer,
       showNotification,
       updateAdminUserLock,
     ],
@@ -404,6 +396,7 @@ export function UsersPageClient({
             : currentEditingUser,
         );
         showNotification("Đã lưu thông tin user.", { tone: "success" });
+        refreshUsersFromServer();
       } catch (error) {
         showNotification(
           getApiErrorMessage(error, "Không thể lưu thông tin user."),
@@ -413,7 +406,7 @@ export function UsersPageClient({
         setSavingUserId(null);
       }
     },
-    [showNotification, updateAdminUser],
+    [refreshUsersFromServer, showNotification, updateAdminUser],
   );
 
   return (
