@@ -1,6 +1,6 @@
 import "server-only";
 
-import { getApiErrorMessage } from "@/lib/util/api-error";
+import { getApiErrorMessage } from "@/lib/util/apiError";
 import type { Role } from "@/types/roles";
 import { serverPrivateFetch } from "./backend-fetch";
 

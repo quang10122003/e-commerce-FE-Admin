@@ -25,7 +25,7 @@ import { UsersTable } from "@/components/admin/users/UsersTable";
 import { buildUsersPageQuery } from "@/components/admin/users/utils";
 import { useNotification } from "@/components/ui/BrowserNotification";
 import { Pagination } from "@/components/ui/Pagination";
-import { getApiErrorMessage } from "@/lib/util/api-error";
+import { getApiErrorMessage } from "@/lib/util/apiError";
 import type { RoleState } from "@/types/roles";
 import {
   ADMIN_USERS_PAGE_SIZE,

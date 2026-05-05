@@ -1,6 +1,6 @@
 import "server-only";
 
-import { getApiErrorMessage } from "@/lib/util/api-error";
+import { getApiErrorMessage } from "@/lib/util/apiError";
 import type { ApiResponse } from "@/types/api";
 import { getServerSession } from "./auth-session";
 

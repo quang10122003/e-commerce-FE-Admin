@@ -11,6 +11,7 @@ import type {
   UpdateUserResponse,
   UserListData,
 } from "@/types/users";
+import { AdminOverviewResponse } from "@/types/overview";
 
 
 // bieens đổi từ prams opject qua trong url
@@ -112,6 +113,11 @@ export const backendApi = createApi({
         url: `/admin/users/${userId}/lock`,
       }),
     }),
+    getOrverView: builder.query<ApiResponse<AdminOverviewResponse>, void>({
+      query: () => ({
+        url: "/admin/overview",
+      }),
+    })
   }),
   reducerPath: "backendApi",
   tagTypes: ["AdminRoles", "AdminUsers", "Auth"],
@@ -125,4 +131,5 @@ export const {
   useLogoutMutation,
   useUpdateAdminUserLockMutation,
   useUpdateAdminUserMutation,
+  useGetOrverViewQuery
 } = backendApi;

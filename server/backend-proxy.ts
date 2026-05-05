@@ -1,7 +1,7 @@
 import "server-only";
 
 import { NextResponse, type NextRequest } from "next/server";
-import { buildErrorResponse, getApiErrorMessage } from "@/lib/util/api-error";
+import { buildErrorResponse, getApiErrorMessage } from "@/lib/util/apiError";
 import type { ApiResponse } from "@/types/api";
 import type { AuthResponse } from "@/types/auth";
 import { clearSession, getRequestSession, setLoginSession } from "./auth-session";

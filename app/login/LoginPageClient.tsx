@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { Lock, ShieldCheck } from "lucide-react";
 import { useLoginMutation } from "@/client/api/backend-api";
-import { getApiErrorMessage } from "@/lib/util/api-error";
+import { getApiErrorMessage } from "@/lib/util/apiError";
 import { ADMIN_ROLE } from "@/types/auth";
 
 type LoginFormValues = {

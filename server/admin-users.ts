@@ -1,6 +1,6 @@
 import "server-only";
 
-import { getApiErrorMessage } from "@/lib/util/api-error";
+import { getApiErrorMessage } from "@/lib/util/apiError";
 import {
   ADMIN_USERS_PAGE_SIZE,
   type AdminUsersFilters,
