@@ -1,8 +1,12 @@
 "use client";
 
+import { useUpdateCategoryMutation } from "@/client/api/backend-api";
+import { useNotification } from "@/components/ui/BrowserNotification";
+import { getApiErrorMessage } from "@/lib/util/apiError";
 import { CategorySummaryResponse } from "@/types/categories";
 import { ImagePlus, Save, X } from "lucide-react";
 import Image from "next/image";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
 import { useForm } from "react-hook-form";
@@ -15,8 +19,13 @@ type CategoryFormEditProps = {
   categoriesEdit: CategorySummaryResponse | null
 };
 
-export function CategoryFormEdit({  categoriesEdit }: CategoryFormEditProps) {
-  const router = useRouter();
+export function CategoryFormEdit({ categoriesEdit }: CategoryFormEditProps) {
+  const router = useRouter()
+
+  const { showNotification } = useNotification();
+
+  const [updateCatagori,{isLoading,error}] = useUpdateCategoryMutation()
+
   // trạng thái tổng: xác định form có đang ở chế độ edit hay không
   const isDisabled = !categoriesEdit;
   // dùng để disable toàn bộ UI khi chưa chọn category để edit
@@ -57,11 +66,35 @@ export function CategoryFormEdit({  categoriesEdit }: CategoryFormEditProps) {
     },
   });
 
-  function onSubmit(data: CategoryEditFormValues) {
-    console.log({
-      name: data.name.trim(),
-      image: data.image?.[0] ?? null,
-    });
+  // hàm submit edit danh mục 
+  async function onSubmit(data: CategoryEditFormValues) {
+    if(!categoriesEdit){
+      return 
+    }
+    try{
+      const repone = await updateCatagori({
+        categoryId:categoriesEdit.id,
+        name:data.name,
+        file:data.image?.[0] ?? null 
+      }).unwrap();
+      showNotification(repone.message,{
+        title:"update thành công",
+        tone:"success"
+      })
+      router.replace("/admin/categories",{
+        scroll:false
+      })
+    }catch(e: unknown) {
+      showNotification(getApiErrorMessage(e,"lỗi chưa update đc danh mục"),{
+        title:"lỗi update danh mục",
+        tone:"error"
+      })
+      console.error(e)
+      if (e instanceof Error) {
+        throw e;
+      }
+      throw new Error("Unknown error");
+    }
   }
 
   return (
@@ -214,15 +247,14 @@ export function CategoryFormEdit({  categoriesEdit }: CategoryFormEditProps) {
 
         {/* Actions */}
         <div className="grid grid-cols-2 gap-2">
-          <button
-            className="rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 cursor-pointer"
-            type="button"
-            onClick={() =>  router.push("/admin/categories") }
+          <Link
+            href="/admin/categories"
+            className="rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 cursor-pointer inline-flex items-center justify-center gap-2"
+            scroll={false}
           >
-            <span className="inline-flex items-center justify-center gap-2">
-              <X className="size-4" /> Hủy
-            </span>
-          </button>
+            <X className="size-4" />
+            Hủy
+          </Link>
 
           <button
             className="rounded-xl bg-(--primary) px-4 py-2.5 text-sm font-semibold text-white transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-70 cursor-pointer"

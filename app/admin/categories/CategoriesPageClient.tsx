@@ -1,4 +1,4 @@
-"use client"
+
 import { CategoryListCards } from "@/components/admin/categories/CategoryListCards";
 import { CategoryFormEdit } from "@/components/admin/categories/CategoryFormEdit";
 import { CategoryQuickList } from "@/components/admin/categories/CategoryQuickList";

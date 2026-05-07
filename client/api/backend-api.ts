@@ -12,7 +12,6 @@ import type {
   UserListData,
 } from "@/types/users";
 import { AdminOverviewResponse } from "@/types/overview";
-import { url } from "inspector";
 import { CategorySummaryResponse } from "@/types/categories";
 
 
@@ -120,12 +119,12 @@ export const backendApi = createApi({
         url: "/admin/overview",
       }),
     }),
-    updateCategory: builder.mutation<ApiResponse<CategorySummaryResponse>, { categoryId:number,name:string,file:File}>({
+    updateCategory: builder.mutation<ApiResponse<CategorySummaryResponse>, { categoryId:number,name:string,file?:File | null}>({
       query: ({categoryId,name,file})=>{
         
         const formData = new FormData()
         formData.append(
-          "data", new Blob([JSON.stringify(name)], { type:"application/json"})
+          "data", new Blob([JSON.stringify({"name":name})], { type:"application/json"})
         );
         if(file!=null){
           formData.append(
@@ -133,7 +132,7 @@ export const backendApi = createApi({
           )
         }
         return {
-          url: `/categori/${categoryId}`,
+          url: `/admin/categori/${categoryId}`,
           method: "PATCH",
           body: formData,
           // KHÔNG set headers, để browser tự set Content-Type + boundary
