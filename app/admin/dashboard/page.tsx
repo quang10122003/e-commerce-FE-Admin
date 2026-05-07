@@ -1,5 +1,5 @@
 import { getApiErrorMessage } from "@/lib/util/apiError";
-import DashboardPageClient from "./DashboardPageClient";
+import DashboardPage from "./DashboardPage";
 import { serverPrivateFetch } from "@/server/backend-fetch";
 import { AdminOverviewResponse } from "@/types/overview";
 const ADMIN_OVERVIEW_URL = "/admin/overview"
@@ -27,7 +27,7 @@ export default async function PageDashboard() {
   const { data , error } = await getAdminOverview();
   return (
     <>
-      <DashboardPageClient data={data} error={error}/>
+      <DashboardPage data={data} error={error}/>
     </>
   )
 }

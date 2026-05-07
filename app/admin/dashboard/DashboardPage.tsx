@@ -21,32 +21,6 @@ const dayInWeek = [
     "Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"
 ];
 
-// const latestOrders = [
-//     {
-//         id: "ORD-2301",
-//         createdAt: "2026-04-18T09:34:00",
-//         customer: "Nguyen Van A",
-//         total: "2,540,000",
-//         payment: "Paid",
-//         status: "SHIPPING",
-//     },
-//     {
-//         id: "ORD-2302",
-//         createdAt: "2026-04-18T12:21:00",
-//         customer: "Tran Thi B",
-//         total: "890,000",
-//         payment: "Pending",
-//         status: "PENDING",
-//     },
-//     {
-//         id: "ORD-2303",
-//         createdAt: "2026-04-17T14:02:00",
-//         customer: "Le Thanh C",
-//         total: "5,200,000",
-//         payment: "Paid",
-//         status: "COMPLETED",
-//     },
-// ];
 
 const alerts = [
     { level: "warning", text: "7 san pham ton kho duoi 5 item" },
@@ -54,7 +28,7 @@ const alerts = [
     { level: "info", text: "12 chat room chua co admin tiep nhan" },
 ];
 
-export default function DashboardPageClient({ data, error }: DashboardPageClientProps) {
+export default function DashboardPage({ data, error }: DashboardPageClientProps) {
     // data StatCard user
     const dataUser = data?.adminUserOverview ;
     // data StatCard user 

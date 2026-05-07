@@ -12,6 +12,8 @@ import type {
   UserListData,
 } from "@/types/users";
 import { AdminOverviewResponse } from "@/types/overview";
+import { url } from "inspector";
+import { CategorySummaryResponse } from "@/types/categories";
 
 
 // bieens đổi từ prams opject qua trong url
@@ -117,7 +119,29 @@ export const backendApi = createApi({
       query: () => ({
         url: "/admin/overview",
       }),
+    }),
+    updateCategory: builder.mutation<ApiResponse<CategorySummaryResponse>, { categoryId:number,name:string,file:File}>({
+      query: ({categoryId,name,file})=>{
+        
+        const formData = new FormData()
+        formData.append(
+          "data", new Blob([JSON.stringify(name)], { type:"application/json"})
+        );
+        if(file!=null){
+          formData.append(
+            "file", file
+          )
+        }
+        return {
+          url: `/categori/${categoryId}`,
+          method: "PATCH",
+          body: formData,
+          // KHÔNG set headers, để browser tự set Content-Type + boundary
+        };
+       
+      }
     })
+
   }),
   reducerPath: "backendApi",
   tagTypes: ["AdminRoles", "AdminUsers", "Auth"],
@@ -131,5 +155,6 @@ export const {
   useLogoutMutation,
   useUpdateAdminUserLockMutation,
   useUpdateAdminUserMutation,
-  useGetOrverViewQuery
+  useGetOrverViewQuery,
+  useUpdateCategoryMutation
 } = backendApi;

@@ -80,7 +80,7 @@ const toneConfig = {
     border: "border-rose-100",
     glow: "shadow-rose-100/80",
     icon: XCircle,
-    iconClass: "bg-rose-50 text-rose-600 ring-rose-100",
+    iconClass: "bg-rose-50 text-error ring-rose-100",
     label: "Loi",
     role: "alert",
   },
@@ -182,7 +182,11 @@ function BrowserNotificationItem({
               </button>
             </div>
 
-            <p className="mt-1 line-clamp-2 text-sm leading-5 text-slate-600">
+            <p
+              className={`mt-1 line-clamp-2 text-sm leading-5 ${
+                notification.tone === "error" ? "text-error" : "text-slate-600"
+              }`}
+            >
               {notification.message}
             </p>
           </div>

@@ -106,7 +106,7 @@ export function UserEditPanel({
             })}
           />
           {errors.email ? (
-            <p className="text-sm text-rose-600">{errors.email.message}</p>
+            <p className="text-sm text-error">{errors.email.message}</p>
           ) : null}
         </label>
 
@@ -125,7 +125,7 @@ export function UserEditPanel({
             })}
           />
           {errors.fullName ? (
-            <p className="text-sm text-rose-600">{errors.fullName.message}</p>
+            <p className="text-sm text-error">{errors.fullName.message}</p>
           ) : null}
         </label>
 
@@ -140,7 +140,7 @@ export function UserEditPanel({
             <UserRoleOptions roleState={roleState} />
           </select>
           {errors.role ? (
-            <p className="text-sm text-rose-600">{errors.role.message}</p>
+            <p className="text-sm text-error">{errors.role.message}</p>
           ) : null}
         </label>
 

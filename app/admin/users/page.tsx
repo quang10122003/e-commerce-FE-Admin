@@ -2,14 +2,8 @@ import { UsersPageClient } from "./UsersPageClient";
 import { getApiErrorMessage } from "@/lib/util/apiError";
 import { buildAdminUsersBackendPath, buildAdminUsersQueryParams, parseAdminUsersFilters } from "@/server/admin-users";
 import { serverPrivateFetch } from "@/server/backend-fetch";
+import { NextSearchParams } from "@/types/next";
 import type { AdminUsersFilters, UserListData } from "@/types/users";
-
-type UsersPageProps = {
-  searchParams: Promise<{
-    [key: string]: string | string[] | undefined;
-  }>;
-};
-
 
 
 // init data users trên server
@@ -31,7 +25,7 @@ async function getAdminUsersInitialData(filters: AdminUsersFilters) {
   }
 }
 
-export default async function UsersPage({ searchParams }: UsersPageProps) {
+export default async function UsersPage({ searchParams }: {searchParams: NextSearchParams;}) {
   const resolvedSearchParams = await searchParams;
   const filters = parseAdminUsersFilters(resolvedSearchParams);
   const { data, error } = await getAdminUsersInitialData(filters);
