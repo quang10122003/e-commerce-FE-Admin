@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600" role="img" aria-labelledby="title desc">
+  <title id="title">Phone product mock image</title>
+  <desc id="desc">A clean product mockup of a dark smartphone with camera lenses.</desc>
+  <rect width="800" height="600" fill="#eef4ff"/>
+  <circle cx="170" cy="110" r="78" fill="#c9ddff"/>
+  <circle cx="660" cy="470" r="112" fill="#d9f3ea"/>
+  <rect x="275" y="70" width="250" height="460" rx="42" fill="#111827"/>
+  <rect x="295" y="92" width="210" height="416" rx="30" fill="#1f2937"/>
+  <rect x="318" y="122" width="164" height="312" rx="20" fill="#dbeafe"/>
+  <path d="M330 380c48-72 93-84 145-18v72H330z" fill="#93c5fd"/>
+  <circle cx="374" cy="230" r="45" fill="#60a5fa"/>
+  <rect x="352" y="454" width="96" height="12" rx="6" fill="#111827"/>
+  <rect x="468" y="112" width="46" height="116" rx="18" fill="#0f172a"/>
+  <circle cx="491" cy="140" r="12" fill="#94a3b8"/>
+  <circle cx="491" cy="174" r="12" fill="#94a3b8"/>
+  <circle cx="491" cy="208" r="12" fill="#94a3b8"/>
+  <ellipse cx="400" cy="548" rx="190" ry="18" fill="#cbd5e1"/>
+</svg>

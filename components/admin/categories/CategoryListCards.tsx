@@ -1,5 +1,3 @@
-"use client";
-
 import Link from "next/link";
 import { CategoryImagePreview } from "./CategoryImagePreview";
 import { formatLocalDateTime } from "@/lib/util/formatDateTime";

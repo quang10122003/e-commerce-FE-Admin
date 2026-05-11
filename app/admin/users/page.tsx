@@ -1,47 +1,74 @@
 import { UsersPageClient } from "./UsersPageClient";
 import { getApiErrorMessage } from "@/lib/util/apiError";
-import { buildAdminUsersBackendPath, buildAdminUsersQueryParams, parseAdminUsersFilters } from "@/server/admin-users";
+import {
+  buildAdminUsersBackendPath,
+  buildAdminUsersQueryParams,
+  parseAdminUsersFilters,
+} from "@/server/admin-users";
 import { serverPrivateFetch } from "@/server/backend-fetch";
-import { NextSearchParams } from "@/types/next";
+import type { NextSearchParams } from "@/types/next";
+import type { Role } from "@/types/roles";
 import type { AdminUsersFilters, UserListData } from "@/types/users";
 
+const ROLES_API = "/admin/roles";
 
-// init data users trên server
-async function getAdminUsersInitialData(filters: AdminUsersFilters) {
-  try {
-    const payload = await serverPrivateFetch<UserListData>(
-      buildAdminUsersBackendPath(buildAdminUsersQueryParams(filters)),
-    );
-
-    return {
-      data:payload.data,
-      error: null,
-    };
-  } catch (e) {
-    return {
-      data: null,
-      error: getApiErrorMessage(e, "Không thể tải danh sách user."),
-    };
-  }
+function getParamValue(value: string | string[] | undefined) {
+  return Array.isArray(value) ? value[0] : value;
 }
 
-export default async function UsersPage({ searchParams }: {searchParams: NextSearchParams;}) {
-  const resolvedSearchParams = await searchParams;
-  const filters = parseAdminUsersFilters(resolvedSearchParams);
-  const { data, error } = await getAdminUsersInitialData(filters);
+async function getAdminUsersInitialData(filters: AdminUsersFilters) {
+  const [usersResult, rolesResult] = await Promise.allSettled([
+    serverPrivateFetch<UserListData>(
+      buildAdminUsersBackendPath(buildAdminUsersQueryParams(filters)),
+    ),
+    serverPrivateFetch<Role[]>(ROLES_API),
+  ]);
 
-  // Lấy id từ query edit để khi refresh trang vẫn mở đúng user đang sửa.
-  const rawEditingUserId = Number.parseInt(
-    Array.isArray(resolvedSearchParams.edit)
-      ? (resolvedSearchParams.edit[0] ?? "")
-      : (resolvedSearchParams.edit ?? ""),
-    10,
-  );
+  return {
+    data: {
+      roles:
+        rolesResult.status === "fulfilled" && rolesResult.value.success
+          ? rolesResult.value.data
+          : null,
+      users:
+        usersResult.status === "fulfilled" && usersResult.value.success
+          ? usersResult.value.data
+          : null,
+    },
+    error: {
+      errorRoles:
+        rolesResult.status === "rejected"
+          ? getApiErrorMessage(rolesResult.reason, "Khong the tai roles.")
+          : rolesResult.value.success
+            ? null
+            : getApiErrorMessage(rolesResult.value, "Khong the tai roles."),
+      errorUsers:
+        usersResult.status === "rejected"
+          ? getApiErrorMessage(
+              usersResult.reason,
+              "Khong the tai danh sach user.",
+            )
+          : usersResult.value.success
+            ? null
+            : getApiErrorMessage(
+                usersResult.value,
+                "Khong the tai danh sach user.",
+              ),
+    },
+  };
+}
 
+export default async function UsersPage({
+  searchParams,
+}: {
+  searchParams: NextSearchParams;
+}) {
+  const params = await searchParams;
+  const filters = parseAdminUsersFilters(params);
+  const editingId = Number(getParamValue(params.edit));
   const editingUserId =
-    Number.isFinite(rawEditingUserId) && rawEditingUserId > 0
-      ? rawEditingUserId
-      : null;
+    Number.isFinite(editingId) && editingId > 0 ? editingId : null;
+  const { data, error } = await getAdminUsersInitialData(filters);
 
   return (
     <UsersPageClient
@@ -49,8 +76,6 @@ export default async function UsersPage({ searchParams }: {searchParams: NextSea
       editingUserId={editingUserId}
       error={error}
       filters={filters}
-      key={`${filters.search}:${filters.roleFilter}:${filters.statusFilter}:${filters.currentPage}:${editingUserId ?? "none"}`}
     />
   );
 }
-

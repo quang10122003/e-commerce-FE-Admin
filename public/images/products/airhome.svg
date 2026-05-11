@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600" role="img" aria-labelledby="title desc">
+  <title id="title">Air purifier product mock image</title>
+  <desc id="desc">A white air purifier product mockup with vents and clean air waves.</desc>
+  <rect width="800" height="600" fill="#ecfeff"/>
+  <circle cx="160" cy="130" r="90" fill="#bae6fd"/>
+  <circle cx="660" cy="455" r="126" fill="#ccfbf1"/>
+  <rect x="270" y="105" width="260" height="390" rx="42" fill="#f8fafc" stroke="#cbd5e1" stroke-width="8"/>
+  <rect x="315" y="145" width="170" height="36" rx="18" fill="#cbd5e1"/>
+  <circle cx="400" cy="225" r="44" fill="#14b8a6"/>
+  <circle cx="400" cy="225" r="24" fill="#ecfeff"/>
+  <path d="M325 300h150M325 330h150M325 360h150M325 390h150" stroke="#94a3b8" stroke-width="14" stroke-linecap="round"/>
+  <path d="M210 210c-46-34-46-70 0-104M590 210c46-34 46-70 0-104M205 352c-58 36-58 76 0 118M595 352c58 36 58 76 0 118" fill="none" stroke="#38bdf8" stroke-width="18" stroke-linecap="round"/>
+  <rect x="330" y="455" width="140" height="20" rx="10" fill="#cbd5e1"/>
+  <ellipse cx="400" cy="530" rx="205" ry="20" fill="#a7f3d0"/>
+</svg>

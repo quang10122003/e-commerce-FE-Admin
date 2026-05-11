@@ -1,51 +1,37 @@
-"use client";
-
-import {
-  useCallback,
-  useDeferredValue,
-  useEffect,
-  useMemo,
-  useState,
-  useTransition,
-} from "react";
 import { Lock, ShieldCheck, Users } from "lucide-react";
-import { usePathname, useRouter } from "next/navigation";
-import {
-  useDeleteAdminUserMutation,
-  useGetAdminRolesQuery,
-  useUpdateAdminUserLockMutation,
-  useUpdateAdminUserMutation,
-} from "@/client/api/backend-api";
 import { PageHeader } from "@/components/admin/PageHeader";
 import { StatCard } from "@/components/admin/StatCard";
 import { UserEditPanel } from "@/components/admin/users/UserEditPanel";
 import { UsersFilters } from "@/components/admin/users/UsersFilters";
 import { UsersTable } from "@/components/admin/users/UsersTable";
-import { buildUsersPageQuery } from "@/components/admin/users/utils";
-import { useNotification } from "@/components/ui/BrowserNotification";
 import { Pagination } from "@/components/ui/Pagination";
-import { getApiErrorMessage } from "@/lib/util/apiError";
-import type { RoleState } from "@/types/roles";
-import {
-  type AdminUsersFilters,
-  type UpdateUserRequest,
-  type UserItem,
-  type UserListData,
-  type UserStats,
+import type { Role, RoleState } from "@/types/roles";
+import type {
+  AdminUsersFilters,
+  UserItem,
+  UserListData,
+  UserStats,
 } from "@/types/users";
 
 type UsersPageClientProps = {
-  // Dữ liệu users init từ Server Component, giống cách dashboard truyền data xuống client.
-  data: UserListData | null;
-  // Id user đang được mở ở panel edit, lấy từ query string của trang.
+  data: {
+    roles: Role[] | null;
+    users: UserListData | null;
+  };
   editingUserId: number | null;
-  // Lỗi init data từ server, nếu backend không trả được danh sách users.
-  error: string | null;
-  // Bộ lọc hiện tại của trang, đã được parse ở Server Component rồi truyền xuống.
+  error: {
+    errorRoles: string | null;
+    errorUsers: string | null;
+  };
   filters: AdminUsersFilters;
 };
 
-// Giá trị mặc định giúp UI render ổn định trong lúc API chưa trả dữ liệu.
+type BuildUsersPageHrefOptions = {
+  editingUserId?: number | null;
+  filters: AdminUsersFilters;
+  page?: number;
+};
+
 const EMPTY_STATS: UserStats = {
   adminUsers: 0,
   lockedUsers: 0,
@@ -53,7 +39,6 @@ const EMPTY_STATS: UserStats = {
 };
 const EMPTY_USERS: UserItem[] = [];
 
-// Tìm user đang được edit trong danh sách hiện tại.
 function findEditingUser(users: UserItem[], editingUserId: number | null) {
   if (!editingUserId) {
     return null;
@@ -62,377 +47,102 @@ function findEditingUser(users: UserItem[], editingUserId: number | null) {
   return users.find((user) => user.id === editingUserId) ?? null;
 }
 
-// Chuyển filters của UI thành params để gọi API lấy danh sách users: phần này hiện nằm ở Server Component.
-// Chỉ lấy data khi backend báo success, còn lại để component dùng fallback rỗng: page đã chuẩn hóa thành data/error.
+function buildUsersPageHref({
+  editingUserId = null,
+  filters,
+  page = filters.currentPage,
+}: BuildUsersPageHrefOptions) {
+  const params = new URLSearchParams();
+  const search = filters.search.trim();
+
+  if (search) {
+    params.set("search", search);
+  }
+
+  if (filters.roleFilter !== "ALL") {
+    params.set("role", filters.roleFilter);
+  }
+
+  if (filters.statusFilter !== "ALL") {
+    params.set("status", filters.statusFilter);
+  }
+
+  if (page > 1) {
+    params.set("page", String(page));
+  }
+
+  if (editingUserId) {
+    params.set("edit", String(editingUserId));
+  }
+
+  const query = params.toString();
+  return `/admin/users${query ? `?${query}` : ""}`;
+}
+
 export function UsersPageClient({
   data,
   editingUserId,
   error,
   filters,
 }: UsersPageClientProps) {
-  // Router và pathname dùng để cập nhật URL khi đổi filter hoặc mở panel edit.
-  const router = useRouter();
-  const pathname = usePathname();
-  // Helper hiển thị thông báo thành công/thất bại cho các thao tác mutation.
-  const { showNotification } = useNotification();
-  // Đánh dấu trạng thái pending khi replace URL filter bằng transition của React.
-  const [isFilterPending, startFilterTransition] = useTransition();
-  // Pending khi refresh lại Server Component sau các mutation users.
-  const [isServerRefreshPending, startServerRefreshTransition] = useTransition();
+  const usersPage = data.users?.users;
+  const users = usersPage?.items ?? EMPTY_USERS;
+  const stats = data.users?.stats ?? EMPTY_STATS;
+  const totalItems = usersPage?.totalItems ?? 0;
+  const totalPages = Math.max(usersPage?.totalPages ?? 1, 1);
+  const currentPage = Math.min(Math.max(filters.currentPage, 1), totalPages);
+  const editingUser = findEditingUser(users, editingUserId);
+  const activeUserId = editingUser?.id ?? null;
 
-  // Query lấy danh sách roles để render filter role và form edit user.
-  const rolesQuery = useGetAdminRolesQuery();
-  // Mutation xóa user theo id.
-  const [deleteAdminUser] = useDeleteAdminUserMutation();
-  // Mutation khóa/mở khóa tài khoản user.
-  const [updateAdminUserLock] = useUpdateAdminUserLockMutation();
-  // Mutation lưu thông tin user ở panel edit.
-  const [updateAdminUser] = useUpdateAdminUserMutation();
+  const roleState: RoleState = {
+    data: data.roles,
+    error: error.errorRoles,
+    isLoading: false,
+  };
 
-  // Các biến dữ liệu suy ra từ props server, luôn có fallback để tránh null-check ở JSX.
-  const usersData = data;
-  const users = usersData?.users.items ?? EMPTY_USERS;
-  const stats = usersData?.stats ?? EMPTY_STATS;
-  const totalItems = usersData?.users.totalItems ?? 0;
-  const totalPages = Math.max(usersData?.users.totalPages ?? 1, 1);
-
-  // Gom data, loading và error của roles thành một object đúng contract RoleState.
-  const roleState: RoleState = useMemo(
-    () => ({
-      data: rolesQuery.data?.success ? rolesQuery.data.data : null,
-      error: rolesQuery.isError
-        ? getApiErrorMessage(rolesQuery.error, "Không thể tải roles.")
-        : rolesQuery.data && !rolesQuery.data.success
-          ? getApiErrorMessage(rolesQuery.data, "Không thể tải roles.")
-          : null,
-      isLoading: rolesQuery.isLoading || rolesQuery.isFetching,
-    }),
-    [
-      rolesQuery.data,
-      rolesQuery.error,
-      rolesQuery.isError,
-      rolesQuery.isFetching,
-      rolesQuery.isLoading,
-    ],
-  );
-
-  // Error của danh sách users lấy từ Server Component.
-  const errorMessage = error;
-
-  // searchDraft giữ text người dùng đang gõ trước khi debounce cập nhật URL.
-  const [searchDraft, setSearchDraft] = useState({
-    // source là search hiện tại từ URL tại thời điểm bắt đầu nhập.
-    source: filters.search,
-    // value là nội dung đang hiển thị trong ô input.
-    value: filters.search,
+  const closeEditHref = buildUsersPageHref({
+    filters,
+    page: currentPage,
   });
-  // Id user đang gọi API khóa/mở khóa để disable đúng row trong bảng.
-  const [submittingUserId, setSubmittingUserId] = useState<number | null>(null);
-  // Id user đang bị xóa để hiển thị trạng thái loading đúng action xóa.
-  const [deletingUserId, setDeletingUserId] = useState<number | null>(null);
-  // Id user đang được lưu ở panel edit.
-  const [savingUserId, setSavingUserId] = useState<number | null>(null);
-  // Id user đang được chọn để edit ở phía client.
-  // State này giúp nút đóng panel hoạt động sau khi F5, vì editingUserId từ props vẫn là id ban đầu.
-  const [activeEditingUserId, setActiveEditingUserId] = useState<number | null>(
-    editingUserId,
-  );
-  // Cache user đang edit để panel vẫn có dữ liệu khi URL đổi nhẹ hoặc list refetch.
-  const [editingUserState, setEditingUserState] = useState<UserItem | null>(
-    () => findEditingUser(users, editingUserId),
-  );
-
-  // Giá trị search hiển thị: ưu tiên draft nếu draft vẫn cùng nguồn với URL hiện tại.
-  const searchInput =
-    searchDraft.source === filters.search ? searchDraft.value : filters.search;
-  // Giá trị search đã defer để input gõ mượt hơn trước khi effect debounce chạy.
-  const deferredSearchInput = useDeferredValue(searchInput);
-  // User đang edit: ưu tiên dữ liệu mới từ list, fallback về cache local nếu cần.
-  const editingUser =
-    findEditingUser(users, activeEditingUserId) ??
-    (editingUserState?.id === activeEditingUserId ? editingUserState : null);
-  // Cờ quyết định layout có hiển thị panel edit bên cạnh table hay không.
-  const isEditing = editingUser !== null;
-  // Id của user đang edit, dùng để biết khi nào cần đóng panel sau mutation.
-  const currentEditingUserId = editingUser?.id ?? null;
-  // Loading tổng hợp cho bảng và pagination.
-  const isUsersLoading = isFilterPending || isServerRefreshPending;
-
-  // Tạo URL mới từ filter và id user đang edit.
-  const buildPageUrl = useCallback(
-    (nextFilters: AdminUsersFilters, nextEditingUserId: number | null) => {
-      const query = buildUsersPageQuery(nextFilters, nextEditingUserId);
-      return `${pathname}${query ? `?${query}` : ""}`;
-    },
-    [pathname],
-  );
-
-  // Gộp filter mới với filter hiện tại rồi replace URL để trigger server fetch mới.
-  const replaceFilters = useCallback(
-    (nextFilters: Partial<AdminUsersFilters>) => {
-      const mergedFilters: AdminUsersFilters = {
-        ...filters,
-        ...nextFilters,
-      };
-      const nextUrl = buildPageUrl(mergedFilters, activeEditingUserId);
-
-      startFilterTransition(() => {
-        router.replace(nextUrl);
-      });
-    },
-    [activeEditingUserId, buildPageUrl, filters, router],
-  );
-
-  // Đồng bộ id user đang edit lên URL mà không điều hướng qua router.
-  const syncEditUrl = useCallback(
-    (nextEditingUserId: number | null) => {
-      // Chỉ đổi query edit bằng History API để đóng/mở panel mượt, không refetch list.
-      window.history.replaceState(
-        null,
-        "",
-        buildPageUrl(filters, nextEditingUserId),
-      );
-    },
-    [buildPageUrl, filters],
-  );
-
-  // Refresh Server Component để lấy lại users sau khi mutation thành công.
-  const refreshUsersFromServer = useCallback(() => {
-    startServerRefreshTransition(() => {
-      router.refresh();
-    });
-  }, [router, startServerRefreshTransition]);
-
-  useEffect(() => {
-    // Chuẩn hóa search trước khi ghi lên URL để tránh query thừa khoảng trắng.
-    const normalizedSearch = deferredSearchInput.trim();
-
-    if (normalizedSearch === filters.search) {
-      return;
-    }
-
-    // Debounce input tìm kiếm để không đổi URL và gọi API ở từng ký tự.
-    const timeoutId = window.setTimeout(() => {
-      replaceFilters({
-        currentPage: 1,
-        search: normalizedSearch,
-      });
-    }, 300);
-
-    return () => window.clearTimeout(timeoutId);
-  }, [deferredSearchInput, filters.search, replaceFilters]);
-
-  // Mở panel edit và lưu user vào cache local để panel có dữ liệu ngay.
-  const openEditUser = useCallback(
-    (user: UserItem) => {
-      setActiveEditingUserId(user.id);
-      setEditingUserState(user);
-      syncEditUrl(user.id);
-    },
-    [syncEditUrl],
-  );
-
-  // Đóng panel edit và xóa query edit khỏi URL.
-  const closeEditUser = useCallback(() => {
-    setActiveEditingUserId(null);
-    setEditingUserState(null);
-    syncEditUrl(null);
-  }, [syncEditUrl]);
-
-  // Cập nhật draft khi người dùng nhập search, chưa gọi API ngay.
-  const updateSearchInput = useCallback(
-    (value: string) => {
-      setSearchDraft({
-        source: filters.search,
-        value,
-      });
-    },
-    [filters.search],
-  );
-
-  // Xóa user sau khi người dùng xác nhận, rồi đóng panel nếu đang edit đúng user đó.
-  const handleDeleteUser = useCallback(
-    async (userId: number) => {
-      const confirmed = window.confirm(
-        `Bạn có chắc muốn xóa tài khoản với id: ${userId}?`,
-      );
-
-      if (!confirmed) {
-        return;
-      }
-
-      try {
-        setDeletingUserId(userId);
-
-        const payload = await deleteAdminUser(userId).unwrap();
-
-        if (!payload.success) {
-          throw new Error(getApiErrorMessage(payload, "Xóa user thất bại."));
-        }
-
-        if (currentEditingUserId === userId) {
-          closeEditUser();
-        }
-
-        showNotification("Đã xóa user thành công.", { tone: "success" });
-        refreshUsersFromServer();
-      } catch (error) {
-        showNotification(
-          getApiErrorMessage(error, "Không thể xóa user."),
-          { tone: "error" },
-        );
-      } finally {
-        setDeletingUserId(null);
-      }
-    },
-    [
-      closeEditUser,
-      currentEditingUserId,
-      deleteAdminUser,
-      refreshUsersFromServer,
-      showNotification,
-    ],
-  );
-
-  // Khóa hoặc mở khóa user, đồng bộ lại panel edit nếu user đó đang được mở.
-  const handleToggleLock = useCallback(
-    async (user: UserItem) => {
-      // nextLocked là trạng thái khóa mới sau khi toggle.
-      const nextLocked = !user.locked;
-      const confirmed = window.confirm(
-        nextLocked
-          ? `Bạn có chắc muốn khóa tài khoản ${user.email}?`
-          : `Bạn có chắc muốn mở khóa tài khoản ${user.email}?`,
-      );
-
-      if (!confirmed) {
-        return;
-      }
-
-      try {
-        setSubmittingUserId(user.id);
-
-        const payload = await updateAdminUserLock({
-          data: { locked: nextLocked },
-          userId: user.id,
-        }).unwrap();
-
-        if (!payload.success) {
-          throw new Error(
-            getApiErrorMessage(payload, "Cập nhật trạng thái thất bại."),
-          );
-        }
-
-        // Nếu user đang edit bị đổi trạng thái và không còn khớp filter hiện tại,
-        // đóng panel để tránh hiển thị bản ghi đã biến mất khỏi danh sách.
-        const editedUserWasToggled = currentEditingUserId === user.id;
-        const editedUserLeavesCurrentFilter =
-          (filters.statusFilter === "ACTIVE" && nextLocked) ||
-          (filters.statusFilter === "LOCKED" && !nextLocked);
-
-        if (editedUserWasToggled && editedUserLeavesCurrentFilter) {
-          closeEditUser();
-        } else {
-          setEditingUserState((currentEditingUser) =>
-            currentEditingUser?.id === user.id
-              ? {
-                  ...currentEditingUser,
-                  locked: payload.data?.locked ?? nextLocked,
-                  status:
-                    payload.data?.status ?? (nextLocked ? "LOCKED" : "ACTIVE"),
-                }
-              : currentEditingUser,
-          );
-        }
-
-        showNotification(
-          nextLocked
-            ? `Đã khóa tài khoản ${user.email}.`
-            : `Đã mở khóa tài khoản ${user.email}.`,
-          { tone: nextLocked ? "warning" : "success" },
-        );
-        refreshUsersFromServer();
-      } catch (error) {
-        showNotification(
-          getApiErrorMessage(error, "Không thể cập nhật trạng thái user."),
-          { tone: "error" },
-        );
-      } finally {
-        setSubmittingUserId(null);
-      }
-    },
-    [
-      closeEditUser,
-      currentEditingUserId,
-      filters.statusFilter,
-      refreshUsersFromServer,
-      showNotification,
-      updateAdminUserLock,
-    ],
-  );
-
-  // Lưu thay đổi thông tin user từ panel edit và cập nhật lại cache local của panel.
-  const handleSaveUser = useCallback(
-    async (userId: number, data: UpdateUserRequest) => {
-      try {
-        setSavingUserId(userId);
-
-        const payload = await updateAdminUser({ data, userId }).unwrap();
-
-        if (!payload.success || !payload.data) {
-          throw new Error(getApiErrorMessage(payload, "Lưu user thất bại."));
-        }
-
-        const savedUser = payload.data;
-
-        setEditingUserState((currentEditingUser) =>
-          currentEditingUser?.id === userId
-            ? {
-                ...currentEditingUser,
-                email: savedUser.email,
-                fullName: savedUser.fullName,
-                role: savedUser.role,
-              }
-            : currentEditingUser,
-        );
-        showNotification("Đã lưu thông tin user.", { tone: "success" });
-        refreshUsersFromServer();
-      } catch (error) {
-        showNotification(
-          getApiErrorMessage(error, "Không thể lưu thông tin user."),
-          { tone: "error" },
-        );
-      } finally {
-        setSavingUserId(null);
-      }
-    },
-    [refreshUsersFromServer, showNotification, updateAdminUser],
-  );
+  const previousHref =
+    currentPage > 1
+      ? buildUsersPageHref({
+          filters,
+          page: currentPage - 1,
+        })
+      : undefined;
+  const nextHref =
+    currentPage < totalPages
+      ? buildUsersPageHref({
+          filters,
+          page: currentPage + 1,
+        })
+      : undefined;
 
   return (
     <section>
       <PageHeader
-        description="Quản lý users, role và trạng thái lock theo dữ liệu backend."
+        description="Quan ly users, role va trang thai lock theo du lieu backend."
         title="Users Management"
       />
 
       <div className="grid gap-4 md:grid-cols-3">
         <StatCard
           icon={<Users className="size-5" />}
-          note="Tổng số tài khoản trong hệ thống"
-          title="Tổng users"
+          note="Tong so tai khoan trong he thong"
+          title="Tong users"
           value={stats.totalUsers.toLocaleString("vi-VN")}
         />
         <StatCard
           icon={<ShieldCheck className="size-5" />}
-          note="Tài khoản có role ADMIN"
+          note="Tai khoan co role ADMIN"
           title="Admin accounts"
           tone="emerald"
           value={stats.adminUsers.toLocaleString("vi-VN")}
         />
         <StatCard
           icon={<Lock className="size-5" />}
-          note="Tài khoản bị khóa tạm thời"
+          note="Tai khoan bi khoa tam thoi"
           title="Locked users"
           tone="amber"
           value={stats.lockedUsers.toLocaleString("vi-VN")}
@@ -441,65 +151,47 @@ export function UsersPageClient({
 
       <div
         className={`mt-6 grid items-start gap-5 ${
-          isEditing ? "xl:grid-cols-[1.4fr_0.9fr]" : "grid-cols-1"
+          editingUser ? "xl:grid-cols-[1.4fr_0.9fr]" : "grid-cols-1"
         }`}
       >
         <article className="panel">
-          <UsersFilters
-            filters={filters}
-            onRoleFilterChange={(roleFilter) => {
-              replaceFilters({
-                currentPage: 1,
-                roleFilter,
-              });
-            }}
-            onSearchChange={updateSearchInput}
-            onStatusFilterChange={(statusFilter) => {
-              replaceFilters({
-                currentPage: 1,
-                statusFilter,
-              });
-            }}
-            roleState={roleState}
-            searchInput={searchInput}
-          />
+          <UsersFilters filters={filters} roleState={roleState} />
 
-          {errorMessage ? (
-            <p className="mt-3 text-sm text-error">{errorMessage}</p>
+          {error.errorUsers ? (
+            <p className="mt-3 text-sm text-error">{error.errorUsers}</p>
+          ) : null}
+          {error.errorRoles ? (
+            <p className="mt-3 text-sm text-error">{error.errorRoles}</p>
           ) : null}
 
           <UsersTable
-            deletingUserId={deletingUserId}
-            isLoading={isUsersLoading}
-            onDeleteUser={(userId) => {
-              void handleDeleteUser(userId);
-            }}
-            onEditUser={openEditUser}
-            onToggleLock={(user) => {
-              void handleToggleLock(user);
-            }}
-            submittingUserId={submittingUserId}
+            activeUserId={activeUserId}
+            closeEditHref={closeEditHref}
+            getEditHref={(userId) =>
+              buildUsersPageHref({
+                editingUserId: userId,
+                filters,
+                page: currentPage,
+              })
+            }
+            statusFilter={filters.statusFilter}
             users={users}
           />
 
           <Pagination
-            currentPage={filters.currentPage}
-            isLoading={isUsersLoading}
+            currentPage={currentPage}
             itemLabel="users"
-            onPageChange={(page) => {
-              replaceFilters({ currentPage: page });
-            }}
+            nextHref={nextHref}
+            previousHref={previousHref}
             totalItems={totalItems}
             totalPages={totalPages}
           />
         </article>
 
         <UserEditPanel
+          closeHref={closeEditHref}
           editingUser={editingUser}
-          isSaving={savingUserId === editingUser?.id}
           key={editingUser?.id ?? "no-user"}
-          onClose={closeEditUser}
-          onSaveUser={handleSaveUser}
           roleState={roleState}
         />
       </div>

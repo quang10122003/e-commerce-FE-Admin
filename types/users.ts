@@ -64,3 +64,10 @@ export interface UpdateUserResponse {
   fullName: string;
   role: UserRole;
 }
+
+export interface AdminUsersSearchParams {
+  page?: string | string[];
+  role?: string | string[];
+  search?: string | string[];
+  status?: string | string[];
+};

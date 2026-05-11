@@ -1,24 +1,21 @@
 import { StatusBadge } from "@/components/admin/StatusBadge";
+import { formatLocalDate } from "@/lib/util/formatDateTime";
 import type { UserItem } from "@/types/users";
-import { formatUserDate } from "./utils";
+import { UsersTableActions } from "./UsersTableActions";
 
 type UsersTableProps = {
-  deletingUserId: number | null;
-  isLoading: boolean;
-  onDeleteUser: (userId: number) => void;
-  onEditUser: (user: UserItem) => void;
-  onToggleLock: (user: UserItem) => void;
-  submittingUserId: number | null;
+  activeUserId?: number | null;
+  closeEditHref: string;
+  getEditHref: (userId: number) => string;
+  statusFilter: string;
   users: UserItem[];
 };
 
 export function UsersTable({
-  deletingUserId,
-  isLoading,
-  onDeleteUser,
-  onEditUser,
-  onToggleLock,
-  submittingUserId,
+  activeUserId = null,
+  closeEditHref,
+  getEditHref,
+  statusFilter,
   users,
 }: UsersTableProps) {
   return (
@@ -37,13 +34,7 @@ export function UsersTable({
         </thead>
 
         <tbody>
-          {isLoading ? (
-            <tr>
-              <td className="py-4 text-slate-500" colSpan={7}>
-                Dang tai danh sach users...
-              </td>
-            </tr>
-          ) : users.length === 0 ? (
+          {users.length === 0 ? (
             <tr>
               <td className="py-4 text-slate-500" colSpan={7}>
                 Khong co user phu hop bo loc.
@@ -65,41 +56,15 @@ export function UsersTable({
                     {user.status || (user.locked ? "LOCKED" : "ACTIVE")}
                   </StatusBadge>
                 </td>
-                <td className="py-3">{formatUserDate(user.createdAt)}</td>
+                <td className="py-3">{formatLocalDate(user.createdAt, "-")}</td>
                 <td className="py-3">
-                  <div className="flex items-center gap-2">
-                    <button
-                      className="btn-outline"
-                      onClick={() => onEditUser(user)}
-                      type="button"
-                    >
-                      Edit
-                    </button>
-
-                    <button
-                      className="btn-outline"
-                      disabled={submittingUserId === user.id}
-                      onClick={() => {
-                        onToggleLock(user);
-                      }}
-                      type="button"
-                    >
-                      {submittingUserId === user.id
-                        ? "Dang xu ly..."
-                        : user.locked
-                          ? "Unlock"
-                          : "Lock"}
-                    </button>
-
-                    <button
-                      disabled={deletingUserId === user.id}
-                      className="btn-outline"
-                      onClick={() => onDeleteUser(user.id)}
-                      type="button"
-                    >
-                      {deletingUserId === user.id ? "Dang xoa..." : "Xoa"}
-                    </button>
-                  </div>
+                  <UsersTableActions
+                    activeUserId={activeUserId}
+                    closeEditHref={closeEditHref}
+                    editHref={getEditHref(user.id)}
+                    statusFilter={statusFilter}
+                    user={user}
+                  />
                 </td>
               </tr>
             ))

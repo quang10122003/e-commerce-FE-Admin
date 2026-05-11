@@ -9,10 +9,10 @@ import { PageHeader } from "@/components/admin/PageHeader";
 import { StatCard } from "@/components/admin/StatCard";
 import { StatusBadge } from "@/components/admin/StatusBadge";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
-import { AdminOverviewResponse } from "@/types/overview";
+import type { AdminOverviewResponse } from "@/types/overview";
 import { formatCompactCurrency, formatCurrency } from "@/lib/util/formatCurrency";
 import { formatLocalDate, formatLocalDateTime } from "@/lib/util/formatDateTime";
-type DashboardPageClientProps = {
+type DashboardPageProps = {
     data: AdminOverviewResponse | null
     error: string | null
 }
@@ -28,7 +28,7 @@ const alerts = [
     { level: "info", text: "12 chat room chua co admin tiep nhan" },
 ];
 
-export default function DashboardPage({ data, error }: DashboardPageClientProps) {
+export default function DashboardPage({ data, error }: DashboardPageProps) {
     // data StatCard user
     const dataUser = data?.adminUserOverview ;
     // data StatCard user 
@@ -48,10 +48,11 @@ export default function DashboardPage({ data, error }: DashboardPageClientProps)
 
     if(error){
         return(
-            <>
-            <div>aiof</div>
-            </>
-        )
+            <div className="panel flex min-h-80 flex-col items-center justify-center gap-3 text-center">
+                <p className="text-sm font-semibold text-error">{error}</p>
+                <p className="text-sm text-slate-500">Vui long thu lai sau.</p>
+            </div>
+        );
     }
 
     if(!data){

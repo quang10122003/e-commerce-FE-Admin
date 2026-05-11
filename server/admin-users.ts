@@ -2,6 +2,7 @@ import "server-only";
 
 import {
   ADMIN_USERS_PAGE_SIZE,
+  AdminUsersSearchParams,
   type AdminUsersFilters,
   type AdminUsersQueryParams,
 } from "@/types/users";
@@ -51,9 +52,7 @@ export function buildAdminUsersBackendPath(params: AdminUsersQueryParams) {
 }
 
 // lấy query trên URL rồi chuyển thành object filter
-export function parseAdminUsersFilters(searchParams: {
-  [key: string]: string | string[] | undefined;
-}): AdminUsersFilters {
+export function parseAdminUsersFilters(searchParams: AdminUsersSearchParams): AdminUsersFilters {
   const rawPage = Number.parseInt(readSearchParam(searchParams.page, "1"), 10);
 
   return {

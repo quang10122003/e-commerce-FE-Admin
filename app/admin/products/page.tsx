@@ -1,106 +1,51 @@
-import { BarChart3, Boxes, ImageIcon, PackagePlus } from "lucide-react";
-import { PageHeader } from "@/components/admin/PageHeader";
-import { StatCard } from "@/components/admin/StatCard";
-import { ProductEditForm } from "@/components/admin/products/ProductEditForm";
-import { ProductFilters } from "@/components/admin/products/ProductFilters";
-import { ProductImagesPanel } from "@/components/admin/products/ProductImagesPanel";
-import { ProductsTable } from "@/components/admin/products/ProductsTable";
-import type { Product } from "@/components/admin/products/types";
+import { buildAdminProductsBackendPath, buildAdminProductsQueryParams, parseAdminProductsFilters } from "@/server/admin-products";
+import ProductsClinet from "./ProductsClinet";
+import type { NextSearchParams } from "@/types/next";
+import { AdminProductListData, AdminProductsFilters } from "@/types/product";
+import { serverPrivateFetch } from "@/server/backend-fetch";
+import { getApiErrorMessage } from "@/lib/util/apiError";
+import { CategorySummaryResponse } from "@/types/categories";
+const CATEGORY_API = "admin/categorie"
 
-const products: Product[] = [
-  {
-    id: 101,
-    name: "iPhone 16 Pro 256GB",
-    category: "Dien thoai",
-    price: "31,990,000",
-    stock: 12,
-    purchases: 214,
-    status: "ACTIVE",
-  },
-  {
-    id: 102,
-    name: "MacBook Air M4",
-    category: "Laptop",
-    price: "28,490,000",
-    stock: 8,
-    purchases: 93,
-    status: "ACTIVE",
-  },
-  {
-    id: 103,
-    name: "Tai nghe Bluetooth MaxSound",
-    category: "Phu kien",
-    price: "1,590,000",
-    stock: 0,
-    purchases: 307,
-    status: "INACTIVE",
-  },
-  {
-    id: 104,
-    name: "May loc khong khi AirHome",
-    category: "Gia dung",
-    price: "3,290,000",
-    stock: 6,
-    purchases: 61,
-    status: "ACTIVE",
-  },
-];
+// Chuẩn hóa giá trị query vì Next có thể trả về string hoặc mảng string.
+function getParamValue(value: string | string[] | undefined) {
+  return Array.isArray(value) ? value[0] : value;
+}
 
-const images = [
-  "/images/products/iphone-main.jpg",
-  "/images/products/iphone-side.jpg",
-  "/images/products/iphone-back.jpg",
-];
 
-export default function ProductsPage() {
-  return (
-    <section>
-      <PageHeader
-        actionHref="#"
-        actionLabel="Them product"
-        description="UI quan ly products + product_images theo schema DB."
-        title="Products Management"
-      />
+// Goi song song API product va category de init UI list/filter/form.
+async function getAdminproductInitialData(filters: AdminProductsFilters) {
+  const [dataProduct, dataCategory] = await Promise.allSettled([
+    serverPrivateFetch<AdminProductListData>(
+      buildAdminProductsBackendPath(buildAdminProductsQueryParams(filters)),
+    ),
+    serverPrivateFetch<CategorySummaryResponse[]>(CATEGORY_API),
+  ])
+  return {
+    data: {
+      product: dataProduct.status === "fulfilled" ? dataProduct.value.data : null,
+      category: dataCategory.status === "fulfilled" ? dataCategory.value.data : null
+    },
+    error: {
+      errorProduct: dataProduct.status === "rejected" ? getApiErrorMessage(dataProduct.reason, "ko lay dc data san pham") : null,
+      errorCategory: dataCategory.status === "rejected"
+        ? "_"
+        : null,
+    },
+  };
+}
 
-      <div className="grid gap-4 md:grid-cols-4">
-        <StatCard
-          icon={<Boxes className="size-5" />}
-          note="Tong so san pham trong DB"
-          title="Tong products"
-          value="168"
-        />
-        <StatCard
-          icon={<BarChart3 className="size-5" />}
-          note="Top selling trong 30 ngay"
-          title="Ban chay nhat"
-          tone="emerald"
-          value="Tai nghe MaxSound"
-        />
-        <StatCard
-          icon={<PackagePlus className="size-5" />}
-          note="Con stock > 0 va dang active"
-          title="Co the ban"
-          tone="blue"
-          value="143"
-        />
-        <StatCard
-          icon={<ImageIcon className="size-5" />}
-          note="Tong so anh product_images"
-          title="Library anh"
-          tone="violet"
-          value="537"
-        />
-      </div>
+export default async function ProductsPage({ searchParams }: { searchParams: NextSearchParams }) {
+  // searchParams là Promise theo kiểu NextSearchParams của dự án, nên cần await trước khi đọc.
+  const params = await searchParams;
+  // tạo ra ojt filter
+  const filters = parseAdminProductsFilters(params)
+  // Query create=1 sẽ mở form ở mode tạo mới.
+  const isCreating = getParamValue(params.create) === "1";
+  // Query edit=<id> sẽ mở form ở mode chỉnh sửa đúng product đó; không có edit thì để null.
+  const editingId = Number(getParamValue(params.edit)) || null;
 
-      <article className="panel mt-6">
-        <ProductFilters />
-        <ProductsTable products={products} />
-      </article>
-
-      <div className="mt-6 grid gap-5 xl:grid-cols-[1.1fr_0.9fr]">
-        <ProductEditForm />
-        <ProductImagesPanel images={images} />
-      </div>
-    </section>
-  );
+  // gọi api lấy init data
+  const { data, error } = await getAdminproductInitialData(filters)
+  return <ProductsClinet data={data} error={error} editingId={editingId} isCreating={isCreating} filters={filters} />;
 }

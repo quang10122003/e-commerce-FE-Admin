@@ -11,8 +11,8 @@ import type {
   UpdateUserResponse,
   UserListData,
 } from "@/types/users";
-import { AdminOverviewResponse } from "@/types/overview";
-import { CategorySummaryResponse } from "@/types/categories";
+import type { AdminOverviewResponse } from "@/types/overview";
+import type { CategorySummaryResponse } from "@/types/categories";
 
 
 // bieens đổi từ prams opject qua trong url
@@ -139,6 +139,23 @@ export const backendApi = createApi({
         };
        
       }
+    }),
+    createCategory: builder.mutation<ApiResponse<CategorySummaryResponse>,{name:string,file:File}>({
+      query: ({ name, file })=>{
+        const  formData = new FormData()
+        formData.append(
+          "data", new Blob([JSON.stringify({name:name})],{type:"application/json"})
+        )
+        
+        formData.append(
+          "file", file
+        )
+        return {
+          url: "/admin/categori",
+          method: "POST",
+          body: formData
+        }
+      }
     })
 
   }),
@@ -155,5 +172,6 @@ export const {
   useUpdateAdminUserLockMutation,
   useUpdateAdminUserMutation,
   useGetOrverViewQuery,
-  useUpdateCategoryMutation
+  useUpdateCategoryMutation,
+  useCreateCategoryMutation
 } = backendApi;

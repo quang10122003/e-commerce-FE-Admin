@@ -1,12 +1,18 @@
 "use client";
 
+import Link from "next/link";
+
 type PaginationProps = {
   currentPage: number;
   totalPages: number;
   totalItems: number;
   isLoading?: boolean;
-  onPageChange: (page: number) => void;
+  // Link mode dung cho Server Component, vi du product page build href tu search params.
+  nextHref?: string;
+  // Callback mode giu cho cac Client Component nhu users page.
+  onPageChange?: (page: number) => void;
   itemLabel?: string;
+  previousHref?: string;
 };
 
 export function Pagination({
@@ -14,13 +20,18 @@ export function Pagination({
   totalPages,
   totalItems,
   isLoading = false,
+  nextHref,
   onPageChange,
   itemLabel = "items",
+  previousHref,
 }: PaginationProps) {
   const safeTotalPages = Math.max(totalPages, 1);
   const safeCurrentPage = Math.min(Math.max(currentPage, 1), safeTotalPages);
+  // Disable nut khi dang loading hoac da o dau/cuoi danh sach.
   const canGoPrev = !isLoading && safeCurrentPage > 1;
   const canGoNext = !isLoading && safeCurrentPage < safeTotalPages;
+  const buttonClassName =
+    "btn-outline disabled:cursor-not-allowed disabled:opacity-50";
 
   return (
     <div className="mt-4 flex items-center justify-between text-sm text-slate-600">
@@ -29,22 +40,34 @@ export function Pagination({
       </p>
 
       <div className="flex items-center gap-2">
-        <button
-          className="btn-outline disabled:cursor-not-allowed disabled:opacity-50"
-          disabled={!canGoPrev}
-          onClick={() => onPageChange(safeCurrentPage - 1)}
-          type="button"
-        >
-          Prev
-        </button>
-        <button
-          className="btn-outline disabled:cursor-not-allowed disabled:opacity-50"
-          disabled={!canGoNext}
-          onClick={() => onPageChange(safeCurrentPage + 1)}
-          type="button"
-        >
-          Next
-        </button>
+        {previousHref && canGoPrev ? (
+          <Link className="btn-outline" href={previousHref} scroll={false}>
+            Prev
+          </Link>
+        ) : (
+          <button
+            className={buttonClassName}
+            disabled={!canGoPrev || !onPageChange}
+            onClick={() => onPageChange?.(safeCurrentPage - 1)}
+            type="button"
+          >
+            Prev
+          </button>
+        )}
+        {nextHref && canGoNext ? (
+          <Link className="btn-outline" href={nextHref} scroll={false}>
+            Next
+          </Link>
+        ) : (
+          <button
+            className={buttonClassName}
+            disabled={!canGoNext || !onPageChange}
+            onClick={() => onPageChange?.(safeCurrentPage + 1)}
+            type="button"
+          >
+            Next
+          </button>
+        )}
       </div>
     </div>
   );

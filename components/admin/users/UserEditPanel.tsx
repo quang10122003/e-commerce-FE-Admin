@@ -1,7 +1,15 @@
+"use client";
+
+import { useTransition } from "react";
+import Link from "next/link";
 import { Save, X } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
+import { useUpdateAdminUserMutation } from "@/client/api/backend-api";
+import { useNotification } from "@/components/ui/BrowserNotification";
+import { getApiErrorMessage } from "@/lib/util/apiError";
 import type { RoleState } from "@/types/roles";
-import type { UpdateUserRequest, UserItem } from "@/types/users";
+import type { UserItem } from "@/types/users";
 import { UserRoleOptions } from "./UserRoleOptions";
 
 type UserEditFormValues = {
@@ -12,20 +20,20 @@ type UserEditFormValues = {
 };
 
 type UserEditPanelProps = {
+  closeHref: string;
   editingUser: UserItem | null;
-  isSaving?: boolean;
-  onClose: () => void;
-  onSaveUser: (userId: number, data: UpdateUserRequest) => Promise<void>;
   roleState: RoleState;
 };
 
 export function UserEditPanel({
+  closeHref,
   editingUser,
-  isSaving = false,
-  onClose,
-  onSaveUser,
   roleState,
 }: UserEditPanelProps) {
+  const router = useRouter();
+  const { showNotification } = useNotification();
+  const [isRoutePending, startRouteTransition] = useTransition();
+  const [updateAdminUser, updateState] = useUpdateAdminUserMutation();
   const {
     register,
     handleSubmit,
@@ -39,17 +47,37 @@ export function UserEditPanel({
     },
     mode: "onBlur",
   });
+  const isSaving = updateState.isLoading || isRoutePending;
 
   async function onSubmit(data: UserEditFormValues) {
     if (!editingUser) {
       return;
     }
 
-    await onSaveUser(editingUser.id, {
-      email: data.email.trim(),
-      fullName: data.fullName.trim(),
-      role: data.role,
-    });
+    try {
+      const payload = await updateAdminUser({
+        data: {
+          email: data.email.trim(),
+          fullName: data.fullName.trim(),
+          role: data.role,
+        },
+        userId: editingUser.id,
+      }).unwrap();
+
+      if (!payload.success || !payload.data) {
+        throw new Error(getApiErrorMessage(payload, "Luu user that bai."));
+      }
+
+      showNotification("Da luu thong tin user.", { tone: "success" });
+      startRouteTransition(() => {
+        router.refresh();
+      });
+    } catch (error) {
+      showNotification(
+        getApiErrorMessage(error, "Khong the luu thong tin user."),
+        { tone: "error" },
+      );
+    }
   }
 
   if (!editingUser) {
@@ -66,14 +94,14 @@ export function UserEditPanel({
           </p>
         </div>
 
-        <button
+        <Link
           aria-label="Đóng form edit user"
           className="btn-outline"
-          onClick={onClose}
-          type="button"
+          href={closeHref}
+          scroll={false}
         >
           <X className="size-4" />
-        </button>
+        </Link>
       </div>
 
       {/* Form được remount theo user ở component cha, nên useForm nhận đúng defaultValues mà không cần reset bằng effect. */}
@@ -154,10 +182,10 @@ export function UserEditPanel({
             {isSubmitting || isSaving ? "Đang lưu..." : "Lưu user"}
           </button>
 
-          <button className="btn-primary w-full" onClick={onClose} type="button">
+          <Link className="btn-primary w-full" href={closeHref} scroll={false}>
             <X className="size-4" />
             Hủy
-          </button>
+          </Link>
         </div>
       </form>
     </article>

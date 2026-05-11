@@ -1,39 +1,57 @@
 
+import { CategoryForm } from "@/components/admin/categories/CategoryForm";
 import { CategoryListCards } from "@/components/admin/categories/CategoryListCards";
-import { CategoryFormEdit } from "@/components/admin/categories/CategoryFormEdit";
 import { CategoryQuickList } from "@/components/admin/categories/CategoryQuickList";
 import { CategoryStats } from "@/components/admin/categories/CategoryStats";
-import { Category } from "@/components/admin/categories/types";
 import { PageHeader } from "@/components/admin/PageHeader";
-import { CategorySummaryResponse } from "@/types/categories";
+import { AdminCategoryOverviewResponse, CategorySummaryResponse } from "@/types/categories";
 interface CategoriesPageClientProps{
-    categories:Category[]
-    data: CategorySummaryResponse[] | null;
-    error:string | null
+    data: {
+        categories: CategorySummaryResponse[] | null;
+        overview: AdminCategoryOverviewResponse | null;
+    };
+    error: {
+        errorCategory: string | null;
+        errorOverview: string | null;
+    };
     editingId: number | null
+    isCreating: boolean
 }
 
-export default function CategoriesPageClient({ categories, data, error, editingId }: CategoriesPageClientProps) {
+export default function CategoriesPageClient({ data, error, editingId, isCreating }: CategoriesPageClientProps) {
+    // các data và error của các cpn con 
+    const categoryData = data.categories;
+    const overviewData = data.overview;
+
+    const categoryError = error.errorCategory;
+    const overviewError = error.errorOverview;
     // data của danh mục đc edit
-    const categoriesEdit = data?.find((categorie)=> categorie.id == editingId) ?? null
+    const categoriesEdit = categoryData?.find((categorie)=> categorie.id == editingId) ?? null
+// mode của form trong page danh mục
+    const mode = isCreating ? "create" : categoriesEdit ? "edit" : "idle";
   return (
     <>
           <section>
               <PageHeader
-                  actionHref="#"
+                  actionHref="/admin/categories?create=1"
                   actionLabel="Them category"
                   description="Quan ly danh muc theo bang categories (name, image, created_at)."
                   title="Categories Management"
               />
 
-              <CategoryStats />
+              <CategoryStats data={overviewData}
+                  error={overviewError} />
 
               <div className="mt-6 grid gap-5 xl:grid-cols-[1.3fr_1fr]">
-                  <CategoryListCards data={data} error={error} editingId={editingId} />
+                  <CategoryListCards data={categoryData} error={categoryError} editingId={editingId} />
 
                   <article className="space-y-5">
-                      <CategoryFormEdit key={categoriesEdit?.id}  categoriesEdit={categoriesEdit} />
-                      <CategoryQuickList categories={categories} />
+                      <CategoryForm
+                          key={isCreating ? "create" : categoriesEdit?.id ?? "idle"}
+                          mode={mode}
+                          categoryEdit={categoriesEdit}
+                      />
+                      <CategoryQuickList data={overviewData}/>
                   </article>
               </div>
           </section>

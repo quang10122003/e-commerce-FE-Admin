@@ -1,28 +1,32 @@
-import { Boxes, ImageIcon, Layers3 } from "lucide-react";
+import { Boxes, Layers3, PackageX } from "lucide-react";
 import { StatCard } from "@/components/admin/StatCard";
-
-export function CategoryStats() {
+import { AdminCategoryOverviewResponse } from "@/types/categories";
+type CategoryStats={
+  data:AdminCategoryOverviewResponse |null
+  error: string | null
+}
+export function CategoryStats({ data, error }: CategoryStats ) {
   return (
     <div className="grid gap-4 md:grid-cols-3">
       <StatCard
         icon={<Boxes className="size-5" />}
         note="Tong danh muc hien co"
         title="Tong categories"
-        value="12"
+        value={data ? String(data.totalCategory) : (error ?? "_")}
       />
       <StatCard
         icon={<Layers3 className="size-5" />}
         note="Category co nhieu product nhat"
         title="Top category"
         tone="emerald"
-        value="Phu kien"
+        value={data ? String(data.topCategory) : (error ?? "_")}
       />
       <StatCard
-        icon={<ImageIcon className="size-5" />}
-        note="Image URL da mapping day du"
-        title="Image quality"
+        icon={<PackageX className="size-5" />}
+        note="Category chua co product"
+        title="Empty categories"
         tone="violet"
-        value="100%"
+        value={data ? String(data.emptyCategories) : (error ?? "_")}
       />
     </div>
   );

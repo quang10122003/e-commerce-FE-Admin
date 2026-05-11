@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600" role="img" aria-labelledby="title desc">
+  <title id="title">Headphone product mock image</title>
+  <desc id="desc">Wireless headphones with soft ear cups on a warm product background.</desc>
+  <rect width="800" height="600" fill="#fff7ed"/>
+  <circle cx="170" cy="150" r="94" fill="#fed7aa"/>
+  <circle cx="650" cy="430" r="122" fill="#e9d5ff"/>
+  <path d="M245 320c0-112 70-190 155-190s155 78 155 190" fill="none" stroke="#334155" stroke-width="38" stroke-linecap="round"/>
+  <path d="M280 318c0-88 54-150 120-150s120 62 120 150" fill="none" stroke="#f8fafc" stroke-width="16" stroke-linecap="round"/>
+  <rect x="185" y="290" width="128" height="178" rx="42" fill="#475569"/>
+  <rect x="487" y="290" width="128" height="178" rx="42" fill="#475569"/>
+  <rect x="214" y="322" width="72" height="110" rx="28" fill="#c4b5fd"/>
+  <rect x="514" y="322" width="72" height="110" rx="28" fill="#c4b5fd"/>
+  <rect x="315" y="424" width="170" height="30" rx="15" fill="#334155"/>
+  <circle cx="400" cy="439" r="8" fill="#f97316"/>
+  <ellipse cx="400" cy="520" rx="238" ry="22" fill="#fed7aa"/>
+</svg>

@@ -1,11 +1,2 @@
-export type ProductStatus = "ACTIVE" | "INACTIVE";
-
-export type Product = {
-  id: number;
-  name: string;
-  category: string;
-  price: string;
-  stock: number;
-  purchases: number;
-  status: ProductStatus;
-};
+// Mode dieu khien form: idle khoa form, create tao moi, edit chinh sua.
+export type ProductFormMode = "idle" | "create" | "edit";
