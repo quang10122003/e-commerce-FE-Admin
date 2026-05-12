@@ -16,7 +16,8 @@ export function buildProductsPageHref({
 }: ProductsPageHrefOptions) {
   const params = new URLSearchParams();
   const search = filters.search.trim();
-
+  // biến dùng để scroll xuông form khi edit
+  let hash = "";
   if (search) {
     params.set("search", search);
   }
@@ -37,8 +38,8 @@ export function buildProductsPageHref({
     params.set("create", "1");
   } else if (editingId) {
     params.set("edit", String(editingId));
+    hash = "#product-form";
   }
-
   const query = params.toString();
-  return `/admin/products${query ? `?${query}` : ""}`;
+  return `/admin/products${query ? `?${query}` : ""}${hash}`;
 }

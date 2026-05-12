@@ -6,6 +6,8 @@ import type { AuthResponse, LoginRequest } from "@/types/auth";
 import type { CategorySummaryResponse } from "@/types/categories";
 import type {
   AdminCreateProductRequest,
+  AdminProductStatusRequest,
+  AdminProductStatusResponse,
   AdminProductSummaryResponse,
 } from "@/types/product";
 import type {
@@ -138,6 +140,29 @@ export const backendApi = createApi({
         };
       },
     }),
+    deleteProduct: builder.mutation<
+    ApiResponse<void>,
+    number
+    >({
+      query: (productId)=>(
+        {
+          method:"DELETE",
+          url:`./admin/products/${productId}`
+        }
+      )
+    }),
+    updateStatusProduct: builder.mutation<
+      ApiResponse<AdminProductStatusResponse>,
+    AdminProductStatusRequest
+    >({
+      query: ({ productId, status })=>(
+        {
+          url: `/admin/products/${productId}/status`,
+          body:{status},
+          method:"PATCH"
+        }
+      )
+    })
   }),
   reducerPath: "backendApi",
   tagTypes: ["AdminProducts", "AdminUsers", "Auth"],
@@ -152,4 +177,6 @@ export const {
   useUpdateAdminUserLockMutation,
   useUpdateAdminUserMutation,
   useUpdateCategoryMutation,
+  useDeleteProductMutation,
+  useUpdateStatusProductMutation
 } = backendApi;

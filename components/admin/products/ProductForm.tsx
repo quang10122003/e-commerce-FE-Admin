@@ -287,7 +287,8 @@ export function ProductForm({
 
   return (
     <article
-      className={`panel relative transition ${
+      id="product-form"
+      className={`panel relative transition scroll-mt-40 ${
         isIdle ? "pointer-events-none opacity-60" : ""
       }`}
     >

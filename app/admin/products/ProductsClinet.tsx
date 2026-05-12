@@ -93,7 +93,7 @@ export default function ProductsClinet({
   return (
     <section>
       <PageHeader
-        actionHref="/admin/products?create=1"
+        actionHref="/admin/products?create=1#product-form"
         actionLabel="Them product"
         description="UI quan ly products + product_images theo schema DB."
         title="Products Management"
@@ -139,13 +139,7 @@ export default function ProductsClinet({
 
         <ProductsTable
           activeProductId={productEdit?.id ?? null}
-          getEditHref={(productId) =>
-            buildProductsPageHref({
-              editingId: productId,
-              filters,
-              page: currentPage,
-            })
-          }
+          filters={filters}
           pagination={{
             currentPage,
             nextHref,

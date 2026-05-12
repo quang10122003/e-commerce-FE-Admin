@@ -68,3 +68,13 @@ export interface AdminProductsSearchParams {
     category?: string | string[];
     status?: string | string[];
 }
+
+export type AdminProductStatusResponse = {
+    productId: number;
+    status: ProductStatus;
+};
+
+export type AdminProductStatusRequest = {
+    productId: number;
+    status: ProductStatus;
+};
