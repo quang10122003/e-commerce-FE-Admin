@@ -5,6 +5,8 @@ import { AdminProductListData, AdminProductsFilters } from "@/types/product";
 import { serverPrivateFetch } from "@/server/backend-fetch";
 import { getApiErrorMessage } from "@/lib/util/apiError";
 import { CategorySummaryResponse } from "@/types/categories";
+import { redirect } from "next/navigation";
+import { buildProductsPageHref } from "@/lib/admin/products-url";
 const CATEGORY_API = "admin/categorie"
 
 // Chuẩn hóa giá trị query vì Next có thể trả về string hoặc mảng string.
@@ -47,5 +49,20 @@ export default async function ProductsPage({ searchParams }: { searchParams: Nex
 
   // gọi api lấy init data
   const { data, error } = await getAdminproductInitialData(filters)
+  const productPage = data.product?.products;
+  const totalPages = Math.max(productPage?.totalPages ?? 1, 1);
+
+  // Neu URL yeu cau page vuot tong so trang, redirect ve page cuoi de lan render sau fetch dung data.
+  if (productPage && filters.currentPage > totalPages) {
+    redirect(
+      buildProductsPageHref({
+        editingId,
+        filters,
+        isCreating,
+        page: totalPages,
+      }),
+    );
+  }
+
   return <ProductsClinet data={data} error={error} editingId={editingId} isCreating={isCreating} filters={filters} />;
 }

@@ -8,6 +8,10 @@ import { useForm } from "react-hook-form";
 import type { ProductFormMode } from "./types";
 import type { CategorySummaryResponse } from "@/types/categories";
 import type { AdminProductImage, AdminProductItem } from "@/types/product";
+import { useCreateProductMutation } from "@/client/api/backend-api";
+import { useNotification } from "@/components/ui/BrowserNotification";
+import { getApiErrorMessage } from "@/lib/util/apiError";
+import { useRouter } from "next/navigation";
 
 // Kiểu dữ liệu mà react-hook-form quản lý trong form product.
 type ProductFormValues = {
@@ -39,6 +43,9 @@ export function ProductForm({
   mode,
   productEdit,
 }: ProductFormProps) {
+  const router = useRouter();
+  const {showNotification} = useNotification()
+  const [createProducts] = useCreateProductMutation()
   // Các biến boolean giúp JSX dễ đọc hơn khi đổi giao diện theo mode.
   const isIdle = mode === "idle";
   const isEdit = mode === "edit";
@@ -226,7 +233,7 @@ export function ProductForm({
     setCurrentImages((images) => images.filter((_, imageIndex) => imageIndex !== index));
   }
 
-  function onSubmit(data: ProductFormValues) {
+  async function onSubmit(data: ProductFormValues) {
     // Idle là trạng thái chưa chọn create/edit nên không cho submit.
     if (isIdle) {
       return;
@@ -238,6 +245,7 @@ export function ProductForm({
     }
 
     const thumbnailFile = data.thumbnail?.[0] ?? null;
+    const imageFiles = Array.from(data.images ?? []);
 
     // Create bắt buộc có thumbnail, nhưng lỗi này chỉ hiện khi bấm submit.
     if (isCreate && !thumbnailFile) {
@@ -246,6 +254,33 @@ export function ProductForm({
       });
       return;
     }
+
+    try{
+      // edit submit
+
+      // create submit
+      if (isCreate) {
+        const respone = await createProducts({
+          name: data.name,
+          description: data.desc,
+          price: data.price,
+          stock: data.stock,
+          status: "ACTIVE",
+          categoryId: data.categoryId,
+          thumbnail: thumbnailFile!,
+          images: imageFiles,
+        }).unwrap();
+
+      showNotification(respone.message,{title:"tạo thành công sản phẩm",tone:"success"})
+        router.replace("/admin/products",{
+          scroll:false
+        })
+      }
+    }catch(e){
+      showNotification(getApiErrorMessage(e,"lỗi"),{title:"lỗi",tone:"error"})
+      console.log(e)
+    }
+    
 
   }
 

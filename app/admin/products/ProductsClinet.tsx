@@ -10,6 +10,7 @@ import type {
   AdminProductsFilters,
 } from "@/types/product";
 import type { ProductFormMode } from "@/components/admin/products/types";
+import { buildProductsPageHref } from "@/lib/admin/products-url";
 
 type ProductsClinetProps = {
   // Data init lay tu Server Component: product list va danh sach category de render filter/form.
@@ -30,50 +31,6 @@ type ProductsClinetProps = {
   isCreating: boolean;
 };
 
-type ProductsPageHrefOptions = {
-  editingId?: number | null;
-  filters: AdminProductsFilters;
-  isCreating?: boolean;
-  page?: number;
-};
-
-// Build URL giu lai bo loc hien tai khi chuyen page, mo edit hoac mo create.
-function buildProductsPageHref({
-  editingId = null,
-  filters,
-  isCreating = false,
-  page = filters.currentPage,
-}: ProductsPageHrefOptions) {
-  const params = new URLSearchParams();
-  const search = filters.search.trim();
-
-  // Chi ghi query khi filter khac mac dinh de URL gon va de doc.
-  if (search) {
-    params.set("search", search);
-  }
-
-  if (filters.categoryFilter !== "ALL") {
-    params.set("category", filters.categoryFilter);
-  }
-
-  if (filters.statusFilter !== "ALL") {
-    params.set("status", filters.statusFilter);
-  }
-
-  if (page > 1) {
-    params.set("page", String(page));
-  }
-
-  if (isCreating) {
-    params.set("create", "1");
-  } else if (editingId) {
-    params.set("edit", String(editingId));
-  }
-
-  const query = params.toString();
-  return `/admin/products${query ? `?${query}` : ""}`;
-}
-
 export default function ProductsClinet({
   data,
   editingId,
@@ -88,10 +45,12 @@ export default function ProductsClinet({
   const totalProduct = productPage?.totalItems ?? 0;
   const totalPages = Math.max(productPage?.totalPages ?? 1, 1);
   const currentPage = Math.min(Math.max(filters.currentPage, 1), totalPages);
+  const errorCategory = error?.errorCategory
   // Thong ke hien tinh theo product trong trang hien tai.
   const totalProductOutOfStock = products.filter(
     (product) => product.stock <= 0,
   ).length;
+
   const topSellingProduct = products.reduce(
     (topProduct, product) =>
       !topProduct || product.purchases > topProduct.purchases
@@ -99,6 +58,7 @@ export default function ProductsClinet({
         : topProduct,
     null as (typeof products)[number] | null,
   );
+
   const totalImages = products.reduce(
     (total, product) => total + product.images.length + 1,
     0,
@@ -170,14 +130,11 @@ export default function ProductsClinet({
       </div>
 
       <article className="panel mt-6">
-        <ProductFilters categories={data.category} filters={filters} />
+        <ProductFilters errorCategory={errorCategory} categories={data.category} filters={filters} />
 
-        {/* Hien thi loi fetch data ngay trong panel list de nguoi dung biet list/filter dang bi anh huong. */}
+        {/* error khi lấy sản phẩm*/}
         {error.errorProduct ? (
           <p className="mt-3 text-sm text-error">{error.errorProduct}</p>
-        ) : null}
-        {error.errorCategory ? (
-          <p className="mt-3 text-sm text-error">{error.errorCategory}</p>
         ) : null}
 
         <ProductsTable

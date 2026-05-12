@@ -5,6 +5,7 @@ import { UserEditPanel } from "@/components/admin/users/UserEditPanel";
 import { UsersFilters } from "@/components/admin/users/UsersFilters";
 import { UsersTable } from "@/components/admin/users/UsersTable";
 import { Pagination } from "@/components/ui/Pagination";
+import { buildUsersPageHref } from "@/lib/admin/users-url";
 import type { Role, RoleState } from "@/types/roles";
 import type {
   AdminUsersFilters,
@@ -26,12 +27,6 @@ type UsersPageClientProps = {
   filters: AdminUsersFilters;
 };
 
-type BuildUsersPageHrefOptions = {
-  editingUserId?: number | null;
-  filters: AdminUsersFilters;
-  page?: number;
-};
-
 const EMPTY_STATS: UserStats = {
   adminUsers: 0,
   lockedUsers: 0,
@@ -45,38 +40,6 @@ function findEditingUser(users: UserItem[], editingUserId: number | null) {
   }
 
   return users.find((user) => user.id === editingUserId) ?? null;
-}
-
-function buildUsersPageHref({
-  editingUserId = null,
-  filters,
-  page = filters.currentPage,
-}: BuildUsersPageHrefOptions) {
-  const params = new URLSearchParams();
-  const search = filters.search.trim();
-
-  if (search) {
-    params.set("search", search);
-  }
-
-  if (filters.roleFilter !== "ALL") {
-    params.set("role", filters.roleFilter);
-  }
-
-  if (filters.statusFilter !== "ALL") {
-    params.set("status", filters.statusFilter);
-  }
-
-  if (page > 1) {
-    params.set("page", String(page));
-  }
-
-  if (editingUserId) {
-    params.set("edit", String(editingUserId));
-  }
-
-  const query = params.toString();
-  return `/admin/users${query ? `?${query}` : ""}`;
 }
 
 export function UsersPageClient({
@@ -159,9 +122,6 @@ export function UsersPageClient({
 
           {error.errorUsers ? (
             <p className="mt-3 text-sm text-error">{error.errorUsers}</p>
-          ) : null}
-          {error.errorRoles ? (
-            <p className="mt-3 text-sm text-error">{error.errorRoles}</p>
           ) : null}
 
           <UsersTable

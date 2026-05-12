@@ -1,59 +1,26 @@
 "use client";
+
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 import type { ApiResponse } from "@/types/api";
 import type { AuthResponse, LoginRequest } from "@/types/auth";
-import type { Role } from "@/types/roles";
+import type { CategorySummaryResponse } from "@/types/categories";
 import type {
-  AdminUsersQueryParams,
+  AdminCreateProductRequest,
+  AdminProductSummaryResponse,
+} from "@/types/product";
+import type {
   ToggleUserLockData,
   ToggleUserLockRequest,
   UpdateUserRequest,
   UpdateUserResponse,
-  UserListData,
 } from "@/types/users";
-import type { AdminOverviewResponse } from "@/types/overview";
-import type { CategorySummaryResponse } from "@/types/categories";
-
-
-// bieens đổi từ prams opject qua trong url
-function toQueryString(params: AdminUsersQueryParams | void) {
-  if (!params) {
-    return "";
-  }
-
-  const searchParams = new URLSearchParams();
-
-  if (params.search) {
-    searchParams.set("search", params.search);
-  }
-
-  if (params.role) {
-    searchParams.set("role", params.role);
-  }
-
-  if (params.status) {
-    searchParams.set("status", params.status);
-  }
-
-  if (typeof params.page === "number") {
-    searchParams.set("page", params.page.toString());
-  }
-
-  if (typeof params.size === "number") {
-    searchParams.set("size", params.size.toString());
-  }
-
-  const queryString = searchParams.toString();
-
-  return queryString ? `?${queryString}` : "";
-}
 
 export const backendApi = createApi({
   baseQuery: fetchBaseQuery({
     baseUrl: "/api/backend",
     credentials: "include",
     prepareHeaders: (headers) => {
-      // Browser chỉ gọi Next API proxy; token thật vẫn nằm trong cookie httpOnly.
+      // Browser only calls the Next API proxy; the real token stays in the httpOnly cookie.
       if (!headers.has("Accept")) {
         headers.set("Accept", "application/json");
       }
@@ -69,14 +36,6 @@ export const backendApi = createApi({
         url: `/admin/users/${userId}`,
       }),
     }),
-    getAdminRoles: builder.query<ApiResponse<Role[]>, void>({
-      providesTags: [{ id: "LIST", type: "AdminRoles" }],
-      query: () => "/admin/roles",
-    }),
-    getAdminUsers: builder.query<ApiResponse<UserListData>, AdminUsersQueryParams>({
-      providesTags: [{ id: "LIST", type: "AdminUsers" }],
-      query: (params) => `/admin/users${toQueryString(params)}`,
-    }),
     login: builder.mutation<ApiResponse<AuthResponse>, LoginRequest>({
       invalidatesTags: ["Auth"],
       query: (body) => ({
@@ -86,7 +45,7 @@ export const backendApi = createApi({
       }),
     }),
     logout: builder.mutation<ApiResponse<null>, void>({
-      invalidatesTags: ["Auth", "AdminUsers", "AdminRoles"],
+      invalidatesTags: ["Auth", "AdminUsers"],
       query: () => ({
         method: "POST",
         url: "/auth/logout",
@@ -114,64 +73,83 @@ export const backendApi = createApi({
         url: `/admin/users/${userId}/lock`,
       }),
     }),
-    getOrverView: builder.query<ApiResponse<AdminOverviewResponse>, void>({
-      query: () => ({
-        url: "/admin/overview",
-      }),
-    }),
-    updateCategory: builder.mutation<ApiResponse<CategorySummaryResponse>, { categoryId:number,name:string,file?:File | null}>({
-      query: ({categoryId,name,file})=>{
-        
-        const formData = new FormData()
+    updateCategory: builder.mutation<
+      ApiResponse<CategorySummaryResponse>,
+      { categoryId: number; name: string; file?: File | null }
+    >({
+      query: ({ categoryId, name, file }) => {
+        const formData = new FormData();
         formData.append(
-          "data", new Blob([JSON.stringify({"name":name})], { type:"application/json"})
+          "data",
+          new Blob([JSON.stringify({ name })], { type: "application/json" }),
         );
-        if(file!=null){
-          formData.append(
-            "file", file
-          )
-        }
-        return {
-          url: `/admin/categori/${categoryId}`,
-          method: "PATCH",
-          body: formData,
-          // KHÔNG set headers, để browser tự set Content-Type + boundary
-        };
-       
-      }
-    }),
-    createCategory: builder.mutation<ApiResponse<CategorySummaryResponse>,{name:string,file:File}>({
-      query: ({ name, file })=>{
-        const  formData = new FormData()
-        formData.append(
-          "data", new Blob([JSON.stringify({name:name})],{type:"application/json"})
-        )
-        
-        formData.append(
-          "file", file
-        )
-        return {
-          url: "/admin/categori",
-          method: "POST",
-          body: formData
-        }
-      }
-    })
 
+        if (file) {
+          formData.append("file", file);
+        }
+
+        return {
+          body: formData,
+          method: "PATCH",
+          url: `/admin/categori/${categoryId}`,
+        };
+      },
+    }),
+    createCategory: builder.mutation<
+      ApiResponse<CategorySummaryResponse>,
+      { name: string; file: File }
+    >({
+      query: ({ name, file }) => {
+        const formData = new FormData();
+        formData.append(
+          "data",
+          new Blob([JSON.stringify({ name:name })], { type: "application/json" }),
+        );
+        formData.append("file", file);
+
+        return {
+          body: formData,
+          method: "POST",
+          url: "/admin/categori",
+        };
+      },
+    }),
+    createProduct: builder.mutation<
+      ApiResponse<AdminProductSummaryResponse>,
+      AdminCreateProductRequest
+    >({
+      invalidatesTags: [{ id: "LIST", type: "AdminProducts" }],
+      query: ({ thumbnail, images, ...data }) => {
+        const formData = new FormData();
+        formData.append(
+          "data",
+          new Blob([JSON.stringify(data)], { type: "application/json" }),
+        );
+        formData.append("thumbnail", thumbnail);
+
+        Array.from(images ?? []).forEach((image) => {
+          formData.append("images", image);
+        });
+
+        return {
+          body: formData,
+          method: "POST",
+          url: "/admin/products",
+        };
+      },
+    }),
   }),
   reducerPath: "backendApi",
-  tagTypes: ["AdminRoles", "AdminUsers", "Auth"],
+  tagTypes: ["AdminProducts", "AdminUsers", "Auth"],
 });
 
 export const {
+  useCreateCategoryMutation,
+  useCreateProductMutation,
   useDeleteAdminUserMutation,
-  useGetAdminRolesQuery,
-  useGetAdminUsersQuery,
   useLoginMutation,
   useLogoutMutation,
   useUpdateAdminUserLockMutation,
   useUpdateAdminUserMutation,
-  useGetOrverViewQuery,
   useUpdateCategoryMutation,
-  useCreateCategoryMutation
 } = backendApi;

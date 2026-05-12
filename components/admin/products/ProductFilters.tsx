@@ -10,9 +10,10 @@ type ProductFiltersProps = {
   categories: CategorySummaryResponse[] | null;
   // Bo loc hien tai lay tu URL, dung lam default value cho form.
   filters: AdminProductsFilters;
+  errorCategory:string | null 
 };
 
-export function ProductFilters({ categories, filters }: ProductFiltersProps) {
+export function ProductFilters({ categories, filters, errorCategory }: ProductFiltersProps) {
   // Timeout debounce rieng cho o search, tranh submit lai URL sau moi ky tu.
   const submitTimeoutRef = useRef<number | null>(null);
 
@@ -52,12 +53,19 @@ export function ProductFilters({ categories, filters }: ProductFiltersProps) {
         defaultValue={filters.categoryFilter}
         name="category"
       >
-        <option value="ALL">Tat ca category</option>
-        {categories?.map((category) => (
-          <option key={category.id} value={String(category.id)}>
-            {category.name}
-          </option>
-        ))}
+        {errorCategory ? (
+          <option disabled={true} value="">Lỗi khi lấy danh mục</option>
+        ) : (
+          <>
+            <option value="ALL">Tat ca category</option>
+
+            {categories?.map((category) => (
+              <option key={category.id} value={String(category.id)}>
+                {category.name}
+              </option>
+            ))}
+          </>
+        )}
       </select>
 
       <select

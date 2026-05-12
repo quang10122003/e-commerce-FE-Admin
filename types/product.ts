@@ -1,13 +1,16 @@
 import { PagedResponse } from "./api";
+
 export const ADMIN_PRODUCTS_PAGE_SIZE = 10;
-export type ProductStatus = "ACTIVE" | "INACTIVE"
-export interface AdminProductImage{
-    id:number
-    url:string
-    publicIdUrl:string
+
+export type ProductStatus = "ACTIVE" | "INACTIVE";
+
+export interface AdminProductImage {
+    id: number;
+    url: string;
+    publicIdUrl: string;
 }
 
-export interface AdminProductItem{
+export interface AdminProductItem {
     id: number;
     name: string;
     description: string;
@@ -23,8 +26,24 @@ export interface AdminProductItem{
     updatedAt: string | null;
 }
 
-// data product tra về phân trang
-export interface AdminProductListData{
+export type AdminProductSummaryResponse = AdminProductItem;
+
+export interface AdminCreateProductData {
+    name: string;
+    description: string;
+    price: number;
+    stock: number;
+    status: ProductStatus;
+    categoryId: number;
+}
+
+export interface AdminCreateProductRequest extends AdminCreateProductData {
+    thumbnail: File;
+    images?: File[] | FileList | null;
+}
+
+// Data product tra ve phan trang.
+export interface AdminProductListData {
     products: PagedResponse<AdminProductItem>;
 }
 
@@ -42,9 +61,10 @@ export interface AdminProductsQueryParams {
     page?: number;
     size?: number;
 }
-export interface AdminProductsSearchParams  {
+
+export interface AdminProductsSearchParams {
     page?: string | string[];
     search?: string | string[];
     category?: string | string[];
     status?: string | string[];
-};
+}

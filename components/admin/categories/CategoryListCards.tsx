@@ -16,7 +16,7 @@ export function CategoryListCards({
   editingId,
 }: CategoryCardsProps) {
   return (
-    <article className="panel">
+    <article className="panel scrollbar-glass max-h-screen overflow-y-auto pr-4">
       <h2 className="text-lg font-semibold text-slate-900">
         Category cards
       </h2>

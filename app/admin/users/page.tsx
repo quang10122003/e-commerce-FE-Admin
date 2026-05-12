@@ -1,4 +1,5 @@
 import { UsersPageClient } from "./UsersPageClient";
+import { buildUsersPageHref } from "@/lib/admin/users-url";
 import { getApiErrorMessage } from "@/lib/util/apiError";
 import {
   buildAdminUsersBackendPath,
@@ -9,6 +10,7 @@ import { serverPrivateFetch } from "@/server/backend-fetch";
 import type { NextSearchParams } from "@/types/next";
 import type { Role } from "@/types/roles";
 import type { AdminUsersFilters, UserListData } from "@/types/users";
+import { redirect } from "next/navigation";
 
 const ROLES_API = "/admin/roles";
 
@@ -69,6 +71,19 @@ export default async function UsersPage({
   const editingUserId =
     Number.isFinite(editingId) && editingId > 0 ? editingId : null;
   const { data, error } = await getAdminUsersInitialData(filters);
+  const usersPage = data.users?.users;
+  const totalPages = Math.max(usersPage?.totalPages ?? 1, 1);
+
+  // Neu URL yeu cau page vuot tong so trang, redirect ve page cuoi de lan render sau fetch dung data.
+  if (usersPage && filters.currentPage > totalPages) {
+    redirect(
+      buildUsersPageHref({
+        editingUserId,
+        filters,
+        page: totalPages,
+      }),
+    );
+  }
 
   return (
     <UsersPageClient
