@@ -1,4 +1,11 @@
+"use client";
+
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useState, useTransition } from "react";
+import { useDeleteCategoryMutation } from "@/client/api/backend-api";
+import { useNotification } from "@/components/ui/BrowserNotification";
+import { getApiErrorMessage } from "@/lib/util/apiError";
 import { CategoryImagePreview } from "./CategoryImagePreview";
 import { formatLocalDateTime } from "@/lib/util/formatDateTime";
 import { CategorySummaryResponse } from "@/types/categories";
@@ -15,6 +22,49 @@ export function CategoryListCards({
   error,
   editingId,
 }: CategoryCardsProps) {
+  const router = useRouter();
+  const { showNotification } = useNotification();
+  const [deleteCategory] = useDeleteCategoryMutation();
+  const [deletingId, setDeletingId] = useState<number | null>(null);
+  const [isRoutePending, startRouteTransition] = useTransition();
+
+  async function handleDeleteCategory(category: CategorySummaryResponse) {
+    const confirmed = window.confirm(
+      `Bạn có chắc muốn xóa danh mục "${category.name}"? Các sản phẩm thuộc danh mục này cũng sẽ bị xóa.`,
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    setDeletingId(category.id);
+
+    try {
+      const response = await deleteCategory(category.id).unwrap();
+
+      showNotification(response.message, {
+        title: "Xóa danh mục thành công",
+        tone: "success",
+      });
+
+      startRouteTransition(() => {
+        if (editingId === category.id) {
+          router.replace("/admin/categories", { scroll: false });
+          return;
+        }
+
+        router.refresh();
+      });
+    } catch (e) {
+      showNotification(getApiErrorMessage(e, "Không thể xóa danh mục."), {
+        title: "Lỗi xóa danh mục",
+        tone: "error",
+      });
+    } finally {
+      setDeletingId(null);
+    }
+  }
+
   return (
     <article className="panel scrollbar-glass max-h-screen overflow-y-auto pr-4">
       <h2 className="text-lg font-semibold text-slate-900">
@@ -101,10 +151,14 @@ export function CategoryListCards({
                     </Link>
 
                     <button
-                      className="rounded-lg border border-red-200 px-2.5 py-1 text-xs font-medium text-error cursor-pointer"
+                      className="rounded-lg border border-red-200 px-2.5 py-1 text-xs font-medium text-error cursor-pointer disabled:cursor-not-allowed disabled:opacity-60"
+                      disabled={deletingId === category.id || isRoutePending}
+                      onClick={() => {
+                        void handleDeleteCategory(category);
+                      }}
                       type="button"
                     >
-                      Delete
+                      {deletingId === category.id ? "Đang xóa" : "Delete"}
                     </button>
                   </div>
                 </div>

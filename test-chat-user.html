@@ -1,0 +1,673 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>User Chat WebSocket Test</title>
+    <style>
+      :root {
+        color-scheme: light;
+        font-family:
+          Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+          "Segoe UI", sans-serif;
+      }
+
+      body {
+        margin: 0;
+        background: #f6f8fb;
+        color: #0f172a;
+      }
+
+      main {
+        max-width: 880px;
+        margin: 32px auto;
+        padding: 0 20px;
+      }
+
+      .panel {
+        border: 1px solid #dbe3ef;
+        border-radius: 8px;
+        background: #ffffff;
+        box-shadow: 0 18px 48px rgba(15, 23, 42, 0.08);
+        overflow: hidden;
+      }
+
+      header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        padding: 18px 20px;
+        border-bottom: 1px solid #e2e8f0;
+      }
+
+      h1 {
+        margin: 0;
+        font-size: 18px;
+        line-height: 1.4;
+      }
+
+      .status {
+        display: inline-flex;
+        align-items: center;
+        min-height: 28px;
+        border-radius: 999px;
+        padding: 0 10px;
+        background: #e2e8f0;
+        color: #334155;
+        font-size: 13px;
+        font-weight: 700;
+      }
+
+      .status.connected {
+        background: #dcfce7;
+        color: #166534;
+      }
+
+      .status.error {
+        background: #fee2e2;
+        color: #991b1b;
+      }
+
+      .content {
+        display: grid;
+        grid-template-columns: 320px 1fr;
+        min-height: 560px;
+      }
+
+      aside {
+        border-right: 1px solid #e2e8f0;
+        padding: 16px;
+        background: #f8fafc;
+      }
+
+      section {
+        display: flex;
+        min-width: 0;
+        flex-direction: column;
+      }
+
+      label {
+        display: block;
+        margin: 14px 0 6px;
+        color: #475569;
+        font-size: 13px;
+        font-weight: 700;
+      }
+
+      .tabs {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+        margin-top: 16px;
+      }
+
+      .tab-button {
+        height: 36px;
+        border: 1px solid #cbd5e1;
+        background: #ffffff;
+        color: #475569;
+      }
+
+      .tab-button.active {
+        border-color: #2563eb;
+        background: #dbeafe;
+        color: #1d4ed8;
+      }
+
+      .tab-panel {
+        display: none;
+      }
+
+      .tab-panel.active {
+        display: block;
+      }
+
+      input,
+      textarea {
+        width: 100%;
+        box-sizing: border-box;
+        border: 1px solid #cbd5e1;
+        border-radius: 8px;
+        background: #ffffff;
+        color: #0f172a;
+        font: inherit;
+        font-size: 14px;
+        outline: none;
+      }
+
+      input {
+        height: 40px;
+        padding: 0 10px;
+      }
+
+      textarea {
+        min-height: 130px;
+        padding: 10px;
+        resize: vertical;
+      }
+
+      input:focus,
+      textarea:focus {
+        border-color: #2563eb;
+        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+      }
+
+      .buttons {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+        margin-top: 16px;
+      }
+
+      button {
+        height: 40px;
+        border: 0;
+        border-radius: 8px;
+        background: #2563eb;
+        color: #ffffff;
+        cursor: pointer;
+        font: inherit;
+        font-size: 14px;
+        font-weight: 800;
+      }
+
+      button.secondary {
+        background: #475569;
+      }
+
+      button.danger {
+        background: #dc2626;
+      }
+
+      button:disabled {
+        cursor: not-allowed;
+        opacity: 0.55;
+      }
+
+      .messages {
+        flex: 1;
+        min-height: 0;
+        padding: 16px;
+        overflow-y: auto;
+      }
+
+      .message {
+        max-width: 78%;
+        margin-bottom: 10px;
+        border-radius: 14px;
+        padding: 9px 11px;
+        background: #e2e8f0;
+        color: #0f172a;
+        font-size: 14px;
+      }
+
+      .message.mine {
+        margin-left: auto;
+        background: #2563eb;
+        color: #ffffff;
+      }
+
+      .meta {
+        margin-bottom: 4px;
+        color: inherit;
+        opacity: 0.75;
+        font-size: 12px;
+        font-weight: 700;
+      }
+
+      form {
+        display: flex;
+        gap: 10px;
+        border-top: 1px solid #e2e8f0;
+        padding: 14px;
+        background: #ffffff;
+      }
+
+      form input {
+        flex: 1;
+        min-width: 0;
+      }
+
+      form button {
+        width: 120px;
+      }
+
+      pre {
+        max-height: 180px;
+        margin: 16px 0 0;
+        overflow: auto;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        background: #0f172a;
+        color: #e2e8f0;
+        padding: 10px;
+        font-size: 12px;
+        line-height: 1.5;
+      }
+
+      @media (max-width: 760px) {
+        .content {
+          grid-template-columns: 1fr;
+        }
+
+        aside {
+          border-right: 0;
+          border-bottom: 1px solid #e2e8f0;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <div class="panel">
+        <header>
+          <h1>User Chat Test - Room #1</h1>
+          <span id="status" class="status">idle</span>
+        </header>
+
+        <div class="content">
+          <aside>
+            <label for="backendUrl">Backend REST URL</label>
+            <input id="backendUrl" value="http://localhost:8080/api" />
+
+            <label for="wsUrl">WebSocket URL</label>
+            <input id="wsUrl" value="ws://localhost:8080/ws/chat" />
+
+            <div class="tabs" role="tablist" aria-label="Chon cach lay room">
+              <button
+                id="roomTabButton"
+                class="tab-button active"
+                type="button"
+                data-tab="room"
+                role="tab"
+                aria-controls="roomTabPanel"
+                aria-selected="true"
+              >
+                Room ID
+              </button>
+              <button
+                id="productTabButton"
+                class="tab-button"
+                type="button"
+                data-tab="product"
+                role="tab"
+                aria-controls="productTabPanel"
+                aria-selected="false"
+              >
+                Product ID
+              </button>
+            </div>
+
+            <div id="roomTabPanel" class="tab-panel active" role="tabpanel">
+              <label for="roomId">Room ID</label>
+              <input id="roomId" value="1" />
+            </div>
+
+            <div id="productTabPanel" class="tab-panel" role="tabpanel">
+              <label for="productId">Product ID</label>
+              <input id="productId" value="1" />
+              <div class="buttons">
+                <button id="createRoomButton" class="secondary" type="button">
+                  Get room
+                </button>
+                <button id="createAndConnectButton" type="button">
+                  Get + Connect
+                </button>
+              </div>
+            </div>
+
+            <label for="accessToken">Access token user</label>
+            <textarea id="accessToken">eyJhbGciOiJIUzM4NCJ9.eyJzdWIiOiJ1c2VyMUBnbWFpbC5jb20iLCJyb2xlIjoiVVNFUiIsInVzZXJJZCI6MSwidG9rZW5UeXBlIjoiYWNjZXNzIiwiZnVsbE5hbWUiOiJOZ3V5ZW4gVmFuIEEiLCJpYXQiOjE3NzkwOTEyMzMsImV4cCI6MTc3OTA5NDgzM30.1GqeZmjcHEBD5X477-VYkDSW8YngdQXWj2dooIELPnGhfcE5BlcjhsGx1YWCAgS8</textarea>
+
+            <div class="buttons">
+              <button id="connectButton" type="button">Connect</button>
+              <button id="disconnectButton" class="danger" type="button" disabled>
+                Disconnect
+              </button>
+            </div>
+            <div class="buttons">
+              <button id="markReadButton" class="secondary" type="button">
+                Mark read
+              </button>
+              <button id="clearMessagesButton" class="secondary" type="button">
+                Clear messages
+              </button>
+            </div>
+
+            <pre id="log"></pre>
+          </aside>
+
+          <section>
+            <div id="messages" class="messages"></div>
+
+            <form id="sendForm">
+              <input
+                id="messageInput"
+                autocomplete="off"
+                placeholder="Nhap tin nhan user gui vao room..."
+                disabled
+              />
+              <button id="sendButton" type="submit" disabled>Gui</button>
+            </form>
+          </section>
+        </div>
+      </div>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/@stomp/stompjs@7.3.0/bundles/stomp.umd.min.js"></script>
+    <script>
+      const elements = {
+        accessToken: document.querySelector("#accessToken"),
+        backendUrl: document.querySelector("#backendUrl"),
+        createAndConnectButton: document.querySelector("#createAndConnectButton"),
+        createRoomButton: document.querySelector("#createRoomButton"),
+        connectButton: document.querySelector("#connectButton"),
+        disconnectButton: document.querySelector("#disconnectButton"),
+        clearMessagesButton: document.querySelector("#clearMessagesButton"),
+        log: document.querySelector("#log"),
+        markReadButton: document.querySelector("#markReadButton"),
+        messageInput: document.querySelector("#messageInput"),
+        messages: document.querySelector("#messages"),
+        productId: document.querySelector("#productId"),
+        productTabButton: document.querySelector("#productTabButton"),
+        productTabPanel: document.querySelector("#productTabPanel"),
+        roomId: document.querySelector("#roomId"),
+        roomTabButton: document.querySelector("#roomTabButton"),
+        roomTabPanel: document.querySelector("#roomTabPanel"),
+        sendButton: document.querySelector("#sendButton"),
+        sendForm: document.querySelector("#sendForm"),
+        status: document.querySelector("#status"),
+        wsUrl: document.querySelector("#wsUrl"),
+      };
+
+      let stompClient = null;
+      let subscription = null;
+
+      function writeLog(message, data) {
+        const now = new Date().toLocaleTimeString();
+        const detail = data ? "\n" + JSON.stringify(data, null, 2) : "";
+        elements.log.textContent = `[${now}] ${message}${detail}\n\n${elements.log.textContent}`;
+      }
+
+      function setStatus(status, tone) {
+        elements.status.textContent = status;
+        elements.status.className = `status ${tone || ""}`;
+      }
+
+      function setConnectedState(isConnected) {
+        elements.connectButton.disabled = isConnected;
+        elements.disconnectButton.disabled = !isConnected;
+        elements.messageInput.disabled = !isConnected;
+        elements.sendButton.disabled = !isConnected;
+      }
+
+      function setCreateRoomLoading(isLoading) {
+        elements.createRoomButton.disabled = isLoading;
+        elements.createAndConnectButton.disabled = isLoading;
+      }
+
+      function selectTab(tab) {
+        const isProductTab = tab === "product";
+        elements.roomTabButton.classList.toggle("active", !isProductTab);
+        elements.productTabButton.classList.toggle("active", isProductTab);
+        elements.roomTabButton.setAttribute("aria-selected", String(!isProductTab));
+        elements.productTabButton.setAttribute("aria-selected", String(isProductTab));
+        elements.roomTabPanel.classList.toggle("active", !isProductTab);
+        elements.productTabPanel.classList.toggle("active", isProductTab);
+      }
+
+      function appendMessage(message) {
+        const currentUserId = 1;
+        const item = document.createElement("div");
+        item.className = message.senderId === currentUserId ? "message mine" : "message";
+
+        const meta = document.createElement("div");
+        meta.className = "meta";
+        meta.textContent = `${message.senderName} - ${message.createdAt}`;
+
+        const content = document.createElement("div");
+        content.textContent = message.content;
+
+        item.append(meta, content);
+        elements.messages.append(item);
+        elements.messages.scrollTop = elements.messages.scrollHeight;
+      }
+
+      async function requestWsTicket() {
+        const backendUrl = elements.backendUrl.value.replace(/\/+$/, "");
+        const accessToken = elements.accessToken.value.trim();
+
+        // Backend hiện tại không cho access token connect trực tiếp vào WebSocket nữa.
+        // Vì vậy file test dùng access token để gọi REST /auth/ws-ticket, rồi lấy ticket ngắn hạn để CONNECT.
+        const response = await fetch(`${backendUrl}/auth/ws-ticket`, {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+            Accept: "application/json",
+          },
+        });
+
+        const payload = await response.json().catch(() => null);
+
+        if (!response.ok || !payload?.success || !payload?.data?.ticket) {
+          throw new Error(payload?.message || `Khong cap duoc ws-ticket. Status ${response.status}`);
+        }
+
+        return payload.data;
+      }
+
+      function getRoomIdFromPayload(payload) {
+        return payload?.data?.id ?? payload?.data?.roomId ?? payload?.data?.room?.id;
+      }
+
+      async function createOrGetRoom() {
+        const backendUrl = elements.backendUrl.value.replace(/\/+$/, "");
+        const productId = elements.productId.value.trim();
+        const accessToken = elements.accessToken.value.trim();
+
+        if (!productId) {
+          throw new Error("Nhap Product ID truoc khi tao room.");
+        }
+
+        const response = await fetch(`${backendUrl}/chat/rooms/${productId}`, {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+            Accept: "application/json",
+          },
+        });
+
+        const payload = await response.json().catch(() => null);
+        const roomId = getRoomIdFromPayload(payload);
+
+        if (!response.ok || !payload?.success || !roomId) {
+          throw new Error(payload?.message || `Khong tao/lay duoc room. Status ${response.status}`);
+        }
+
+        elements.roomId.value = String(roomId);
+        writeLog("Da tao/lay room theo productId", {
+          productId,
+          roomId,
+          response: payload,
+        });
+
+        return roomId;
+      }
+
+      async function handleCreateRoom(connectAfterCreate) {
+        setCreateRoomLoading(true);
+
+        try {
+          if (stompClient?.connected) disconnect();
+          const roomId = await createOrGetRoom();
+
+          if (connectAfterCreate) {
+            writeLog(`Dang connect vao room ${roomId}...`);
+            await connect();
+          }
+        } catch (error) {
+          writeLog(error.message || "Create room failed");
+        } finally {
+          setCreateRoomLoading(false);
+        }
+      }
+
+      async function markRoomAsRead(source) {
+        const backendUrl = elements.backendUrl.value.replace(/\/+$/, "");
+        const roomId = elements.roomId.value.trim();
+        const accessToken = elements.accessToken.value.trim();
+
+        if (!roomId) {
+          writeLog("Nhap Room ID truoc khi mark read.");
+          return false;
+        }
+
+        try {
+          const response = await fetch(`${backendUrl}/chat/rooms/${roomId}/read`, {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${accessToken}`,
+              Accept: "application/json",
+            },
+          });
+
+          const payload = await response.json().catch(() => null);
+
+          if (!response.ok || !payload?.success) {
+            throw new Error(payload?.message || `Khong mark read duoc room. Status ${response.status}`);
+          }
+
+          writeLog("Da mark room la da doc", {
+            roomId,
+            source,
+            response: payload,
+          });
+
+          return true;
+        } catch (error) {
+          writeLog(error.message || "Mark read failed");
+          return false;
+        }
+      }
+
+      function clearMessages() {
+        elements.messages.innerHTML = "";
+        writeLog("Da clear messages tren UI test.");
+      }
+
+      async function connect() {
+        const roomId = elements.roomId.value.trim();
+        const wsUrl = elements.wsUrl.value.trim();
+
+        setStatus("connecting", "");
+        writeLog("Dang xin ws-ticket...");
+
+        try {
+          const ticket = await requestWsTicket();
+          writeLog("Da nhan ws-ticket", {
+            expiresInSeconds: ticket.expiresInSeconds,
+            tokenType: ticket.tokenType,
+          });
+
+          stompClient = new StompJs.Client({
+            brokerURL: wsUrl,
+            connectHeaders: {
+              Authorization: `${ticket.tokenType} ${ticket.ticket}`,
+            },
+            reconnectDelay: 0,
+            heartbeatIncoming: 10000,
+            heartbeatOutgoing: 10000,
+            debug: (message) => writeLog(message),
+            onConnect: () => {
+              setStatus("connected", "connected");
+              setConnectedState(true);
+              writeLog(`Da connect WebSocket. Dang subscribe room ${roomId}...`);
+
+              subscription = stompClient.subscribe(
+                `/topic/chat/rooms/${roomId}`,
+                (frame) => {
+                  const message = JSON.parse(frame.body);
+                  writeLog("Nhan message tu topic", message);
+                  appendMessage(message);
+                },
+              );
+            },
+            onStompError: (frame) => {
+              setStatus("error", "error");
+              writeLog("STOMP error", {
+                body: frame.body,
+                headers: frame.headers,
+              });
+            },
+            onWebSocketClose: (event) => {
+              setStatus("closed", "");
+              setConnectedState(false);
+              writeLog("WebSocket da dong", {
+                code: event.code,
+                reason: event.reason,
+              });
+            },
+            onWebSocketError: () => {
+              setStatus("error", "error");
+              writeLog("WebSocket error. Hay kiem tra backend URL, CORS va token.");
+            },
+          });
+
+          stompClient.activate();
+        } catch (error) {
+          setStatus("error", "error");
+          setConnectedState(false);
+          writeLog(error.message || "Connect failed");
+        }
+      }
+
+      function disconnect() {
+        subscription?.unsubscribe();
+        subscription = null;
+        stompClient?.deactivate();
+        stompClient = null;
+        setConnectedState(false);
+        setStatus("idle", "");
+        writeLog("Da disconnect.");
+      }
+
+      function sendMessage(event) {
+        event.preventDefault();
+
+        const roomId = elements.roomId.value.trim();
+        const content = elements.messageInput.value.trim();
+
+        if (!content || !stompClient?.connected) return;
+
+        stompClient.publish({
+          destination: `/api/chat/rooms/${roomId}/send`,
+          body: JSON.stringify({ content }),
+        });
+
+        writeLog("Da publish message", {
+          destination: `/api/chat/rooms/${roomId}/send`,
+          content,
+        });
+
+        elements.messageInput.value = "";
+        elements.messageInput.focus();
+
+        // Giống flow dự án: sau khi gửi tin thì gọi API mark-read cho room hiện tại.
+        markRoomAsRead("after-send");
+      }
+
+      elements.roomTabButton.addEventListener("click", () => selectTab("room"));
+      elements.productTabButton.addEventListener("click", () => selectTab("product"));
+      elements.createRoomButton.addEventListener("click", () => handleCreateRoom(false));
+      elements.createAndConnectButton.addEventListener("click", () => handleCreateRoom(true));
+      elements.markReadButton.addEventListener("click", () => markRoomAsRead("manual"));
+      elements.clearMessagesButton.addEventListener("click", clearMessages);
+      elements.connectButton.addEventListener("click", connect);
+      elements.disconnectButton.addEventListener("click", disconnect);
+      elements.sendForm.addEventListener("submit", sendMessage);
+      setConnectedState(false);
+      writeLog("San sang test. Bam Connect de bat dau.");
+    </script>
+  </body>
+</html>

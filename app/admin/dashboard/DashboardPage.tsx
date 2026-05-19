@@ -8,7 +8,7 @@ import {
 import { PageHeader } from "@/components/admin/PageHeader";
 import { StatCard } from "@/components/admin/StatCard";
 import { StatusBadge } from "@/components/admin/StatusBadge";
-import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
+import { Loading } from "@/components/ui/Loading";
 import type { AdminOverviewResponse } from "@/types/overview";
 import { formatCompactCurrency, formatCurrency } from "@/lib/util/formatCurrency";
 import { formatLocalDate, formatLocalDateTime } from "@/lib/util/formatDateTime";
@@ -58,7 +58,7 @@ export default function DashboardPage({ data, error }: DashboardPageProps) {
     if(!data){
         return (
             <div className="panel flex min-h-80 flex-col items-center justify-center gap-3 text-blue-600">
-                <LoadingSpinner size="lg" label="Dang tai dashboard" />
+                <Loading size="lg" label="Dang tai dashboard" />
                 <p className="text-sm font-medium text-slate-600">Dang tai dashboard...</p>
             </div>
         );

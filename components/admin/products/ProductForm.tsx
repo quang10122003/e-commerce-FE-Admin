@@ -8,7 +8,7 @@ import { useForm } from "react-hook-form";
 import type { ProductFormMode } from "./types";
 import type { CategorySummaryResponse } from "@/types/categories";
 import type { AdminProductImage, AdminProductItem } from "@/types/product";
-import { useCreateProductMutation } from "@/client/api/backend-api";
+import { useCreateProductMutation, useUpdateProductMutation } from "@/client/api/backend-api";
 import { useNotification } from "@/components/ui/BrowserNotification";
 import { getApiErrorMessage } from "@/lib/util/apiError";
 import { useRouter } from "next/navigation";
@@ -46,6 +46,8 @@ export function ProductForm({
   const router = useRouter();
   const {showNotification} = useNotification()
   const [createProducts] = useCreateProductMutation()
+  // Mutation riêng cho edit product vì backend yêu cầu PUT multipart kèm version hiện tại.
+  const [updateProduct] = useUpdateProductMutation()
   // Các biến boolean giúp JSX dễ đọc hơn khi đổi giao diện theo mode.
   const isIdle = mode === "idle";
   const isEdit = mode === "edit";
@@ -245,7 +247,9 @@ export function ProductForm({
     }
 
     const thumbnailFile = data.thumbnail?.[0] ?? null;
-    const imageFiles = Array.from(data.images ?? []);
+    // Gallery input is cleared after each pick so the same file can be selected again.
+    // Use the managed gallery state as the submit source of truth instead of the DOM file input.
+    const imageFiles = galleryFileItems.map((item) => item.file);
 
     // Create bắt buộc có thumbnail, nhưng lỗi này chỉ hiện khi bấm submit.
     if (isCreate && !thumbnailFile) {
@@ -257,6 +261,35 @@ export function ProductForm({
 
     try{
       // edit submit
+      if (isEdit && productEdit) {
+        console.log(productEdit.version)
+        // currentImages là ảnh cũ còn được giữ trên form; ảnh cũ không còn trong state này sẽ bị xóa ở backend.
+        const currentImageIds = new Set(currentImages.map((image) => image.id));
+        const deleteImageUrls = initialImages
+          .filter((image) => !currentImageIds.has(image.id))
+          .map((image) => image.url);
+
+        const respone = await updateProduct({
+          productId: productEdit.id,
+          // Version lấy từ response lúc mở form, dùng để backend chặn ghi đè khi product đã bị người khác sửa.
+          version: productEdit.version,
+          name: data.name,
+          description: data.desc,
+          price: data.price,
+          stock: data.stock,
+          status: productEdit.status,
+          categoryId: data.categoryId,
+          thumbnail: thumbnailFile,
+          images: imageFiles,
+          deleteImageUrls,
+        }).unwrap();
+
+        showNotification(respone.message,{title:"cap nhat thanh cong san pham",tone:"success"})
+        router.replace("/admin/products",{
+          scroll:false
+        })
+        return;
+      }
 
       // create submit
       if (isCreate) {
@@ -279,6 +312,9 @@ export function ProductForm({
     }catch(e){
       showNotification(getApiErrorMessage(e,"lỗi"),{title:"lỗi",tone:"error"})
       console.log(e)
+      router.replace("/admin/products", {
+        scroll: false
+      })
     }
     
 

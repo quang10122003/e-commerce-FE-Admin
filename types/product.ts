@@ -12,6 +12,8 @@ export interface AdminProductImage {
 
 export interface AdminProductItem {
     id: number;
+    // Version do backend trả về, dùng lại khi update để backend phát hiện dữ liệu chỉnh sửa đã cũ.
+    version: number;
     name: string;
     description: string;
     price: number;
@@ -40,6 +42,17 @@ export interface AdminCreateProductData {
 export interface AdminCreateProductRequest extends AdminCreateProductData {
     thumbnail: File;
     images?: File[] | FileList | null;
+}
+
+// Chỉ dùng cho luồng cập nhật product: create/delete/status không cần gửi version.
+export interface AdminUpdateProductRequest extends AdminCreateProductData {
+    productId: number;
+    // Version lấy từ product đang edit, backend sẽ so sánh với version hiện tại trong DB.
+    version: number;
+    thumbnail?: File | null;
+    images?: File[] | FileList | null;
+    // Danh sách URL ảnh cũ bị admin bỏ khỏi form; backend dùng URL để xóa entity ảnh tương ứng.
+    deleteImageUrls?: string[];
 }
 
 // Data product tra ve phan trang.

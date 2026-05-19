@@ -9,6 +9,7 @@ import type {
   AdminProductStatusRequest,
   AdminProductStatusResponse,
   AdminProductSummaryResponse,
+  AdminUpdateProductRequest,
 } from "@/types/product";
 import type {
   ToggleUserLockData,
@@ -16,6 +17,7 @@ import type {
   UpdateUserRequest,
   UpdateUserResponse,
 } from "@/types/users";
+import type { ChatRoom, WsTicketResponse } from "@/types/chat";
 
 export const backendApi = createApi({
   baseQuery: fetchBaseQuery({
@@ -53,6 +55,19 @@ export const backendApi = createApi({
         url: "/auth/logout",
       }),
     }),
+    createWsTicket: builder.mutation<WsTicketResponse, void>({
+      query: () => ({
+        method: "POST",
+        url: "/ws-ticket",
+      }),
+    }),
+    markChatRoomAsRead: builder.mutation<ApiResponse<ChatRoom>, number>({
+      invalidatesTags: ["AdminChatRooms"],
+      query: (roomId) => ({
+        method: "POST",
+        url: `/chat/rooms/${roomId}/read`,
+      }),
+    }),
     updateAdminUser: builder.mutation<
       ApiResponse<UpdateUserResponse>,
       { data: UpdateUserRequest; userId: number }
@@ -79,6 +94,7 @@ export const backendApi = createApi({
       ApiResponse<CategorySummaryResponse>,
       { categoryId: number; name: string; file?: File | null }
     >({
+      invalidatesTags: [{ id: "LIST", type: "AdminCategories" }],
       query: ({ categoryId, name, file }) => {
         const formData = new FormData();
         formData.append(
@@ -101,6 +117,7 @@ export const backendApi = createApi({
       ApiResponse<CategorySummaryResponse>,
       { name: string; file: File }
     >({
+      invalidatesTags: [{ id: "LIST", type: "AdminCategories" }],
       query: ({ name, file }) => {
         const formData = new FormData();
         formData.append(
@@ -115,6 +132,13 @@ export const backendApi = createApi({
           url: "/admin/categori",
         };
       },
+    }),
+    deleteCategory: builder.mutation<ApiResponse<void>, number>({
+      invalidatesTags: [{ id: "LIST", type: "AdminCategories" }],
+      query: (categoryId) => ({
+        method: "DELETE",
+        url: `/admin/categori/${categoryId}`,
+      }),
     }),
     createProduct: builder.mutation<
       ApiResponse<AdminProductSummaryResponse>,
@@ -137,6 +161,39 @@ export const backendApi = createApi({
           body: formData,
           method: "POST",
           url: "/admin/products",
+        };
+      },
+    }),
+    updateProduct: builder.mutation<
+      ApiResponse<AdminProductSummaryResponse>,
+      AdminUpdateProductRequest
+    >({
+      invalidatesTags: [{ id: "LIST", type: "AdminProducts" }],
+      query: ({ productId, thumbnail, images, deleteImageUrls, ...data }) => {
+        const formData = new FormData();
+
+        // Backend dùng @ModelAttribute, nên các field text phải append trực tiếp thay vì gói vào Blob JSON.
+        Object.entries(data).forEach(([key, value]) => {
+          formData.append(key, String(value));
+        });
+
+        if (thumbnail) {
+          formData.append("thumbnail", thumbnail);
+        }
+
+        Array.from(images ?? []).forEach((image) => {
+          formData.append("images", image);
+        });
+
+        // Gửi lặp cùng key để Spring bind thành List<String> deleteImageUrls.
+        deleteImageUrls?.forEach((url) => {
+          formData.append("deleteImageUrls", url);
+        });
+
+        return {
+          body: formData,
+          method: "PUT",
+          url: `/admin/products/${productId}`,
         };
       },
     }),
@@ -165,18 +222,22 @@ export const backendApi = createApi({
     })
   }),
   reducerPath: "backendApi",
-  tagTypes: ["AdminProducts", "AdminUsers", "Auth"],
+  tagTypes: ["AdminCategories", "AdminProducts", "AdminUsers", "AdminChatRooms", "Auth"],
 });
 
 export const {
   useCreateCategoryMutation,
   useCreateProductMutation,
+  useCreateWsTicketMutation,
+  useDeleteCategoryMutation,
   useDeleteAdminUserMutation,
   useLoginMutation,
   useLogoutMutation,
+  useMarkChatRoomAsReadMutation,
   useUpdateAdminUserLockMutation,
   useUpdateAdminUserMutation,
   useUpdateCategoryMutation,
+  useUpdateProductMutation,
   useDeleteProductMutation,
   useUpdateStatusProductMutation
 } = backendApi;
