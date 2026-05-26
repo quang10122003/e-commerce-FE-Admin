@@ -53,7 +53,7 @@ export function useAdminChatSocket({
 
             setStatus("connected");
             inboxSubscriptionRef.current = client.subscribe(
-              "/topic/admin/chat/rooms",
+              "/topic/chat/rooms",
               (frame) => {
                 // Room preview chỉ nhận từ inbox topic, không tự suy từ message topic.
                 onRoomUpdate(parseChatRoomFrame(frame));

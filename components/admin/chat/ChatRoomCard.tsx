@@ -15,7 +15,9 @@ export function ChatRoomCard({ href, isActive, room }: ChatRoomCardProps) {
   // Các trạng thái này quyết định badge, font weight và viền active/unread.
   const isAssigned = room.assignmentStatus === "ASSIGNED";
   const hasUnread = room.unreadCount > 0;
-  const lastMessageText = room.lastMessageContent?.trim() || "Chua co tin nhan nao";
+  const lastMessageContent = room.lastMessageContent?.trim();
+  const lastMessageText = lastMessageContent || "Chua co tin nhan nao";
+  const lastMessageSenderName = room.lastMessageSenderName?.trim();
   const displayTime = formatLocalDateTime(room.lastMessageAt ?? room.createdAt);
 
   return (
@@ -75,7 +77,14 @@ export function ChatRoomCard({ href, isActive, room }: ChatRoomCardProps) {
                   hasUnread ? "font-semibold text-slate-950" : "text-slate-600",
                 )}
               >
-                {lastMessageText}
+                {lastMessageContent && lastMessageSenderName ? (
+                  <>
+                    <span className="font-semibold">{lastMessageSenderName}: </span>
+                    {lastMessageText}
+                  </>
+                ) : (
+                  lastMessageText
+                )}
               </p>
             </div>
 
