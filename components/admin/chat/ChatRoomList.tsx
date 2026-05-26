@@ -1,5 +1,5 @@
 import { ChatRoomCard } from "@/components/admin/chat/ChatRoomCard";
-import { ChatRoom } from "@/types/chat";
+import type { ChatRoom } from "@/types/chat";
 
 type ChatRoomListProps = {
   getRoomHref: (roomId: number) => string;
@@ -12,6 +12,7 @@ export function ChatRoomList({
   rooms,
   selectedRoomId,
 }: ChatRoomListProps) {
+  // List chỉ render dữ liệu đã được container chuẩn bị; click card đổi room qua URL.
   return (
     <article className="panel mt-6">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
@@ -26,9 +27,8 @@ export function ChatRoomList({
         </span>
       </div>
 
-      <div className="mt-4 grid gap-4 lg:grid-cols-2 2xl:grid-cols-3">
+      <div className="mt-4 grid max-h-125 gap-4 overflow-y-scroll lg:grid-cols-2 2xl:grid-cols-3">
         {rooms.map((room) => (
-          // Mỗi card tự build href theo room id, không dùng state client để mở chi tiết.
           <ChatRoomCard
             href={getRoomHref(room.id)}
             isActive={selectedRoomId === room.id}

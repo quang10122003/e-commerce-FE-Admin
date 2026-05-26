@@ -1,27 +1,38 @@
 import Link from "next/link";
 import { ArrowLeft, X } from "lucide-react";
 import { StatusBadge } from "@/components/admin/StatusBadge";
-import { ChatMessage, ChatRoom } from "@/types/chat";
-import { AdminChatRealtimePanel } from "./AdminChatRealtimePanel";
+import { ChatRoomMessagesPanel } from "@/components/admin/chat/ChatRoomMessagesPanel";
+import { cn } from "@/lib/util/cn";
+import type { ChatMessage, ChatRoom } from "@/types/chat";
 
 type ChatRoomDetailDrawerProps = {
   closeHref: string;
+  draft: string;
   messages: ChatMessage[];
+  onDraftChange: (value: string) => void;
+  onSendMessage: () => void;
   room: ChatRoom | null;
+  socketConnected: boolean;
 };
 
 export function ChatRoomDetailDrawer({
   closeHref,
+  draft,
   messages,
+  onDraftChange,
+  onSendMessage,
   room,
+  socketConnected,
 }: ChatRoomDetailDrawerProps) {
+  // Overlay và drawer đều bám theo room hiện tại; không có room thì trượt khỏi màn hình.
   return (
     <>
       <Link
         aria-hidden={!room}
-        className={`fixed inset-0 z-40 bg-slate-950/30 transition-opacity duration-300 ${
-          room ? "opacity-100" : "pointer-events-none opacity-0"
-        }`}
+        className={cn(
+          "fixed inset-0 z-40 bg-slate-950/30 transition-opacity duration-300",
+          room ? "opacity-100" : "pointer-events-none opacity-0",
+        )}
         href={closeHref}
         tabIndex={room ? 0 : -1}
       />
@@ -29,16 +40,21 @@ export function ChatRoomDetailDrawer({
       <aside
         aria-label="Chi tiet chat room"
         aria-modal="true"
-        className={`fixed bottom-0 right-0 top-0 z-50 flex w-full max-w-3xl flex-col border-l border-slate-200 bg-slate-50 p-4 shadow-2xl transition-transform duration-300 ease-out sm:p-5 ${
-          room ? "translate-x-0" : "translate-x-full"
-        }`}
+        className={cn(
+          "fixed bottom-0 right-0 top-0 z-50 flex w-full max-w-3xl transform-gpu flex-col border-l border-slate-200 bg-slate-50 p-4 shadow-2xl transition-transform duration-300 ease-out will-change-transform sm:p-5",
+          room ? "translate-x-0" : "translate-x-full",
+        )}
         role="dialog"
       >
         {room ? (
           <RoomDetail
             closeHref={closeHref}
+            draft={draft}
             messages={messages}
+            onDraftChange={onDraftChange}
+            onSendMessage={onSendMessage}
             room={room}
+            socketConnected={socketConnected}
           />
         ) : null}
       </aside>
@@ -48,18 +64,25 @@ export function ChatRoomDetailDrawer({
 
 type RoomDetailProps = {
   closeHref: string;
+  draft: string;
   messages: ChatMessage[];
+  onDraftChange: (value: string) => void;
+  onSendMessage: () => void;
   room: ChatRoom;
+  socketConnected: boolean;
 };
 
-function RoomDetail({ closeHref, messages, room }: RoomDetailProps) {
-  // Backend suy ra enum này từ admin_id, UI không tự đoán trạng thái từ field hiển thị như adminName.
+function RoomDetail({
+  closeHref,
+  draft,
+  messages,
+  onDraftChange,
+  onSendMessage,
+  room,
+  socketConnected,
+}: RoomDetailProps) {
+  // Trạng thái assigned lấy từ backend, UI không tự suy từ adminName.
   const isAssigned = room.assignmentStatus === "ASSIGNED";
-  const realtimePanelKey = [
-    room.id,
-    room.unreadCount,
-    messages.map((message) => `${message.id}:${message.read}`).join(","),
-  ].join(":");
 
   return (
     <article className="panel flex min-h-0 flex-1 flex-col">
@@ -94,11 +117,13 @@ function RoomDetail({ closeHref, messages, room }: RoomDetailProps) {
         )}
       </div>
 
-      {/* Realtime và input state nằm dưới boundary này; drawer metadata vẫn lấy từ server. */}
-      <AdminChatRealtimePanel
-        initialMessages={messages}
-        key={realtimePanelKey}
+      <ChatRoomMessagesPanel
+        draft={draft}
+        messages={messages}
+        onDraftChange={onDraftChange}
+        onSendMessage={onSendMessage}
         room={room}
+        socketConnected={socketConnected}
       />
     </article>
   );

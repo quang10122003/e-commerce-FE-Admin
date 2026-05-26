@@ -17,7 +17,7 @@ import type {
   UpdateUserRequest,
   UpdateUserResponse,
 } from "@/types/users";
-import type { ChatRoom, WsTicketResponse } from "@/types/chat";
+import type { ChatMessage, ChatRoom, WsTicketResponse } from "@/types/chat";
 
 export const backendApi = createApi({
   baseQuery: fetchBaseQuery({
@@ -66,6 +66,12 @@ export const backendApi = createApi({
       query: (roomId) => ({
         method: "POST",
         url: `/chat/rooms/${roomId}/read`,
+      }),
+    }),
+    getChatRoomMessages: builder.query<ApiResponse<ChatMessage[]>, number>({
+      query: (roomId) => ({
+        method: "GET",
+        url: `/chat/rooms/${roomId}/messages`,
       }),
     }),
     updateAdminUser: builder.mutation<
@@ -233,6 +239,7 @@ export const {
   useDeleteAdminUserMutation,
   useLoginMutation,
   useLogoutMutation,
+  useLazyGetChatRoomMessagesQuery,
   useMarkChatRoomAsReadMutation,
   useUpdateAdminUserLockMutation,
   useUpdateAdminUserMutation,

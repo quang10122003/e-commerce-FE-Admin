@@ -7,7 +7,7 @@ import { getApiErrorMessage } from "@/lib/util/apiError";
 import { serverPrivateFetch } from "@/server/backend-fetch";
 import { ChatMessage, ChatRoom } from "@/types/chat";
 import type { NextSearchParams } from "@/types/next";
-import { ChatPageClient } from "./ChatPageClient";
+import { ChatPageContent } from "./ChatPageContent";
 
 const ADMIN_CHAT_ROOMS_API = "/admin/chat/rooms";
 
@@ -114,7 +114,7 @@ export default async function ChatPage({
         />
       </div>
 
-      <ChatPageClient
+      <ChatPageContent
         error={error}
         messages={data.messages}
         rooms={data.rooms}

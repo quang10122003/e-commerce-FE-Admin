@@ -62,3 +62,16 @@ export interface ChatMessage {
 
     createdAt: string;
 }
+
+export interface ChatReadReceipt {
+    type: "MESSAGES_READ" | string;
+
+    roomId: number;
+
+    readerId: number | null;
+    readerName: string | null;
+
+    messageIds: number[];
+
+    readAt: string;
+}

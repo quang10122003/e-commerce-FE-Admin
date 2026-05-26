@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { MessageCircle, Package, UserRound } from "lucide-react";
 import { StatusBadge } from "@/components/admin/StatusBadge";
+import { cn } from "@/lib/util/cn";
+import { formatLocalDateTime } from "@/lib/util/formatDateTime";
 import type { ChatRoom } from "@/types/chat";
 
 type ChatRoomCardProps = {
@@ -10,22 +12,20 @@ type ChatRoomCardProps = {
 };
 
 export function ChatRoomCard({ href, isActive, room }: ChatRoomCardProps) {
+  // Các trạng thái này quyết định badge, font weight và viền active/unread.
   const isAssigned = room.assignmentStatus === "ASSIGNED";
   const hasUnread = room.unreadCount > 0;
-
-  const lastMessageText =
-    room.lastMessageContent?.trim() || "Chua co tin nhan nao";
-
-  const displayTime = room.lastMessageAt ?? room.createdAt;
+  const lastMessageText = room.lastMessageContent?.trim() || "Chua co tin nhan nao";
+  const displayTime = formatLocalDateTime(room.lastMessageAt ?? room.createdAt);
 
   return (
     <Link
-      className={`group rounded-2xl border p-4 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-blue-300 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 ${isActive
-          ? "border-blue-300 bg-blue-50 ring-2 ring-blue-100"
-          : hasUnread
-            ? "border-blue-200 bg-white"
-            : "border-slate-200 bg-white"
-        }`}
+      className={cn(
+        "group rounded-2xl border p-4 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-blue-300 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400",
+        isActive && "border-blue-300 bg-blue-50 ring-2 ring-blue-100",
+        !isActive && hasUnread && "border-blue-200 bg-white",
+        !isActive && !hasUnread && "border-slate-200 bg-white",
+      )}
       href={href}
     >
       <div className="flex items-start justify-between gap-4">
@@ -35,8 +35,10 @@ export function ChatRoomCard({ href, isActive, room }: ChatRoomCardProps) {
           </p>
 
           <p
-            className={`mt-1 truncate text-base ${hasUnread ? "font-bold text-slate-950" : "font-semibold text-slate-900"
-              }`}
+            className={cn(
+              "mt-1 truncate text-base",
+              hasUnread ? "font-bold text-slate-950" : "font-semibold text-slate-900",
+            )}
           >
             {room.userName}
           </p>
@@ -68,16 +70,16 @@ export function ChatRoomCard({ href, isActive, room }: ChatRoomCardProps) {
               <MessageCircle className="mt-1 size-4 shrink-0 text-slate-400" />
 
               <p
-                className={`line-clamp-2 text-sm leading-6 ${hasUnread ? "font-semibold text-slate-950" : "text-slate-600"
-                  }`}
+                className={cn(
+                  "line-clamp-2 text-sm leading-6",
+                  hasUnread ? "font-semibold text-slate-950" : "text-slate-600",
+                )}
               >
                 {lastMessageText}
               </p>
             </div>
 
-            <p className="mt-2 text-xs font-medium text-slate-400">
-              {displayTime}
-            </p>
+            <p className="mt-2 text-xs font-medium text-slate-400">{displayTime}</p>
           </div>
 
           {hasUnread ? (
