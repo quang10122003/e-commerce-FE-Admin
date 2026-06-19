@@ -14,6 +14,7 @@ import {
 
 export type AuthSession = {
   accessToken?: string;
+  refreshToken?: string;
   role?: string;
 };
 
@@ -30,6 +31,7 @@ export async function getServerSession(): Promise<AuthSession> {
 
   return {
     accessToken: cookieStore.get(ACCESS_TOKEN_COOKIE_KEY)?.value,
+    refreshToken: cookieStore.get(REFRESHTOKEN_TOKEN_COOKIE_KEY)?.value,
     role: cookieStore.get(ROLE_COOKIE_KEY)?.value,
   };
 }
@@ -38,17 +40,22 @@ export async function getServerSession(): Promise<AuthSession> {
 export function getRequestSession(request: NextRequest): AuthSession {
   return {
     accessToken: request.cookies.get(ACCESS_TOKEN_COOKIE_KEY)?.value,
+    refreshToken: request.cookies.get(REFRESHTOKEN_TOKEN_COOKIE_KEY)?.value,
     role: request.cookies.get(ROLE_COOKIE_KEY)?.value,
   };
 }
 
-// set tokne vào cokki 
-export function setLoginSession(response: NextResponse, auth: AuthResponse) {
+// Lưu access token mới sau login hoặc refresh token.
+export function setAccessTokenSession(response: NextResponse, accessToken: string) {
   response.cookies.set(
     ACCESS_TOKEN_COOKIE_KEY,
-    auth.accessToken,
+    accessToken,
     cookieOptions(ACCESS_TOKEN_MAX_AGE_SECONDS),
   );
+}
+
+export function setLoginSession(response: NextResponse, auth: AuthResponse) {
+  setAccessTokenSession(response, auth.accessToken);
   response.cookies.set(
     REFRESHTOKEN_TOKEN_COOKIE_KEY,
     auth.refreshToken,

@@ -1,6 +1,12 @@
 "use client";
 
-import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
+import {
+  createApi,
+  fetchBaseQuery,
+  type BaseQueryFn,
+  type FetchArgs,
+  type FetchBaseQueryError,
+} from "@reduxjs/toolkit/query/react";
 import type { ApiResponse } from "@/types/api";
 import type { AuthResponse, LoginRequest } from "@/types/auth";
 import type { CategorySummaryResponse } from "@/types/categories";
@@ -19,19 +25,75 @@ import type {
 } from "@/types/users";
 import type { ChatMessage, ChatRoom, WsTicketResponse } from "@/types/chat";
 
-export const backendApi = createApi({
-  baseQuery: fetchBaseQuery({
-    baseUrl: "/api/backend",
-    credentials: "include",
-    prepareHeaders: (headers) => {
-      // Browser only calls the Next API proxy; the real token stays in the httpOnly cookie.
-      if (!headers.has("Accept")) {
-        headers.set("Accept", "application/json");
-      }
+// Gửi API client qua proxy backend của Next và kèm cookie httpOnly.
+const rawBaseQuery = fetchBaseQuery({
+  baseUrl: "/api/backend",
+  credentials: "include",
+  prepareHeaders: (headers) => {
+    // Browser chỉ gọi Next API proxy; token thật nằm trong cookie httpOnly.
+    if (!headers.has("Accept")) {
+      headers.set("Accept", "application/json");
+    }
 
-      return headers;
-    },
-  }),
+    return headers;
+  },
+});
+
+// Nhận diện envelope lỗi ngay cả khi HTTP status vẫn là 2xx.
+function isFailedApiResponse(data: unknown) {
+  return (
+    typeof data === "object" &&
+    data !== null &&
+    "success" in data &&
+    (data as { success?: unknown }).success === false
+  );
+}
+
+// Điều hướng về login theo flow admin khi private API vẫn mất auth sau proxy retry.
+function redirectToLogin() {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  const nextPath = `${window.location.pathname}${window.location.search}`;
+  const loginUrl = new URL("/login", window.location.origin);
+
+  loginUrl.searchParams.set("next", nextPath);
+  window.location.replace(loginUrl.toString());
+}
+
+// Chuẩn hóa lỗi proxy và xóa cache RTK Query khi session không còn hợp lệ.
+const backendBaseQuery: BaseQueryFn<string | FetchArgs, unknown, FetchBaseQueryError> = async (
+  args,
+  api,
+  extraOptions,
+) => {
+  const result = await rawBaseQuery(args, api, extraOptions);
+
+  if ("data" in result && isFailedApiResponse(result.data)) {
+    return {
+      error: {
+        data: result.data,
+        error: "Request failed.",
+        status: "CUSTOM_ERROR",
+      },
+    };
+  }
+
+  if (result.error?.status === 401) {
+    // Xóa cache cũ để UI admin không hiển thị dữ liệu stale sau khi hết phiên.
+    api.dispatch(backendApi.util.resetApiState());
+
+    if (api.endpoint !== "login" && api.endpoint !== "logout") {
+      redirectToLogin();
+    }
+  }
+
+  return result;
+};
+
+export const backendApi = createApi({
+  baseQuery: backendBaseQuery,
   endpoints: (builder) => ({
     deleteAdminUser: builder.mutation<ApiResponse<null>, number>({
       invalidatesTags: [{ id: "LIST", type: "AdminUsers" }],

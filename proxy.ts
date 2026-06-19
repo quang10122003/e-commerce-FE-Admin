@@ -3,6 +3,7 @@ import type { NextRequest } from "next/server";
 import {
   ACCESS_TOKEN_COOKIE_KEY,
   ADMIN_ROLE,
+  REFRESHTOKEN_TOKEN_COOKIE_KEY,
   ROLE_COOKIE_KEY,
 } from "@/server/auth-constants";
 
@@ -24,9 +25,10 @@ export function proxy(request: NextRequest) {
   const isAdminRoute = pathname.startsWith("/admin");
   const isLoginRoute = pathname === LOGIN_PATH;
   const accessToken = request.cookies.get(ACCESS_TOKEN_COOKIE_KEY)?.value;
+  const refreshToken = request.cookies.get(REFRESHTOKEN_TOKEN_COOKIE_KEY)?.value;
   const role = request.cookies.get(ROLE_COOKIE_KEY)?.value;
 
-  const isAuthenticated = Boolean(accessToken);
+  const isAuthenticated = Boolean(accessToken || refreshToken);
   const isAdmin = role === ADMIN_ROLE;
 
   if (isAdminRoute && !isAuthenticated) {

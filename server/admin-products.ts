@@ -1,10 +1,7 @@
 import "server-only";
 import { ADMIN_PRODUCTS_PAGE_SIZE, AdminProductsFilters, AdminProductsQueryParams, AdminProductsSearchParams } from "@/types/product";
+import { readSearchParam } from "@/lib/util/readSearchParam";
 
-// Chuẩn hóa search param về string: lấy phần tử đầu nếu là array, dùng fallback nếu undefined
-function readSearchParam(value:string | string[] | undefined , fallback=""){
-    return Array.isArray(value) ? value[0] ?? fallback : value ??fallback
-}
 // tạo url param cho việc call api backend
 export function buildAdminProductsSearchParams(params: AdminProductsQueryParams){
     const searchParams = new URLSearchParams()

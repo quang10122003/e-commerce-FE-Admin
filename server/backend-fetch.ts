@@ -1,7 +1,10 @@
 import "server-only";
 
+import { redirect } from "next/navigation";
 import { getApiErrorMessage } from "@/lib/util/apiError";
 import type { ApiResponse } from "@/types/api";
+import { refreshAccessToken } from "./auth-refresh";
+import { buildAuthRefreshRoute, hasAuthRefreshMarker } from "./auth-refresh-redirect";
 import { getServerSession } from "./auth-session";
 
 const BACKEND_URL =
@@ -21,6 +24,7 @@ export type BackendFetchOptions = Omit<NextFetchOptions, "body" | "headers"> & {
   accessToken?: string;
   body?: BackendRequestBody;
   headers?: HeadersInit;
+  refreshRedirectPath?: string;
   timeoutMs?: number;
 };
 
@@ -38,6 +42,19 @@ function buildBackendUrl(path: string) {
   }
 
   return `${BACKEND_URL.replace(/\/+$/, "")}/${path.replace(/^\/+/, "")}`;
+}
+
+// Mang theo payload lỗi backend để nơi gọi xử lý theo status.
+export class BackendResponseError extends Error {
+  payload: unknown;
+  status: number;
+
+  constructor(message: string, status: number, payload: unknown) {
+    super(message);
+    this.name = "BackendResponseError";
+    this.payload = payload;
+    this.status = status;
+  }
 }
 
 function isJsonBody(body: BackendRequestBody | undefined): body is JsonBody {
@@ -176,8 +193,10 @@ async function requestBackendJson<TData>(
   const payload = await readJson<ApiResponse<TData>>(response);
 
   if (!response.ok) {
-    throw new Error(
+    throw new BackendResponseError(
       getApiErrorMessage(payload, "Backend trả về lỗi. Vui lòng thử lại."),
+      response.status,
+      payload,
     );
   }
 
@@ -202,10 +221,45 @@ export async function serverPrivateFetch<TData>(
   options: Omit<BackendFetchOptions, "accessToken"> = {},
 ) {
   const session = await getServerSession();
+  let accessToken = session.accessToken;
+  const refreshRedirectPath = options.refreshRedirectPath;
+  const canRedirectToRefresh = refreshRedirectPath
+    ? !hasAuthRefreshMarker(refreshRedirectPath)
+    : false;
 
-  return requestBackendJson<TData>(path, {
-    ...options,
-    accessToken: session.accessToken,
-    cache: "no-store",
-  });
+  if (!accessToken && session.refreshToken) {
+    // Tự phục hồi khi access token mất nhưng refresh token còn hợp lệ.
+    if (refreshRedirectPath && canRedirectToRefresh) {
+      redirect(buildAuthRefreshRoute(refreshRedirectPath));
+    }
+
+    accessToken = (await refreshAccessToken(session.refreshToken)) ?? undefined;
+  }
+
+  try {
+    return await requestBackendJson<TData>(path, {
+      ...options,
+      accessToken,
+      cache: "no-store",
+    });
+  } catch (error) {
+    if (error instanceof BackendResponseError && error.status === 401 && session.refreshToken) {
+      // Access token hết hạn thì refresh một lần rồi retry request ban đầu.
+      if (refreshRedirectPath && canRedirectToRefresh) {
+        redirect(buildAuthRefreshRoute(refreshRedirectPath));
+      }
+
+      const nextAccessToken = await refreshAccessToken(session.refreshToken);
+
+      if (nextAccessToken) {
+        return requestBackendJson<TData>(path, {
+          ...options,
+          accessToken: nextAccessToken,
+          cache: "no-store",
+        });
+      }
+    }
+
+    throw error;
+  }
 }

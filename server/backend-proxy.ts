@@ -4,7 +4,13 @@ import { NextResponse, type NextRequest } from "next/server";
 import { buildErrorResponse, getApiErrorMessage } from "@/lib/util/apiError";
 import type { ApiResponse } from "@/types/api";
 import type { AuthResponse } from "@/types/auth";
-import { clearSession, getRequestSession, setLoginSession } from "./auth-session";
+import { refreshAccessToken } from "./auth-refresh";
+import {
+  clearSession,
+  getRequestSession,
+  setAccessTokenSession,
+  setLoginSession,
+} from "./auth-session";
 import { fetchBackendRaw } from "./backend-fetch";
 
 export type BackendProxyRouteContext = {
@@ -151,16 +157,34 @@ export async function handleBackendProxyRequest(
 
   // check xem có phải api public k 
   const isPublicPath = PUBLIC_BACKEND_PATHS.has(pathname);
+  const requestBody = await readRequestBody(request);
+  const requestHeaders = pickRequestHeaders(request);
 
   
   try {
-    const backendResponse = await fetchBackendRaw(pathWithSearch, {
+    let backendResponse = await fetchBackendRaw(pathWithSearch, {
       accessToken: isPublicPath ? undefined : session.accessToken,
-      body: await readRequestBody(request),
-      headers: pickRequestHeaders(request),
+      body: requestBody,
+      headers: requestHeaders,
       method: request.method,
     });
 //  đọc toàn bộ body mà backend trả về, dưới dạng dữ liệu thô ArrayBuffer
+    let nextAccessToken: string | null = null;
+
+    if (!isPublicPath && backendResponse.status === 401 && session.refreshToken) {
+      // Access token hết hạn thì refresh một lần rồi retry request ban đầu.
+      nextAccessToken = await refreshAccessToken(session.refreshToken);
+
+      if (nextAccessToken) {
+        backendResponse = await fetchBackendRaw(pathWithSearch, {
+          accessToken: nextAccessToken,
+          body: requestBody,
+          headers: requestHeaders,
+          method: request.method,
+        });
+      }
+    }
+
     const buffer = await backendResponse.arrayBuffer();
 
     const contentType = backendResponse.headers.get("content-type");
@@ -182,12 +206,13 @@ export async function handleBackendProxyRequest(
       payload.data
     ) {
       setLoginSession(response, payload.data);
+    } else if (nextAccessToken && backendResponse.ok) {
+      // Ghi access token mới để các request sau không phải refresh lại.
+      setAccessTokenSession(response, nextAccessToken);
+    } else if (!isPublicPath && backendResponse.status === 401) {
+      // Refresh thất bại hoặc retry vẫn 401 thì xóa session cũ.
+      clearSession(response);
     }
-
-    // Chưa có interceptor renew token: nếu backend báo 401 cho private API thì clear session.
-    // if (!isPublicPath && backendResponse.status === 401) {
-    //   clearSession(response);
-    // }
 
     return response;
   } catch (error) {
