@@ -1,13 +1,11 @@
 "use client";
 
-import { useRouter, usePathname, useSearchParams } from "next/navigation";
-import { useState } from "react";
-import type { AdminPaymentItem, PaymentStatus } from "@/types/payment";
+import Form from "next/form";
+import { useRef } from "react";
 import { formatLocalDateTime } from "@/lib/util/formatDateTime";
+import type { AdminPaymentItem, AdminPaymentsFilters, PaymentStatus } from "@/types/payment";
 
-// ─── Badge helpers ────────────────────────────────────────────────────────────
-
-/** Trả về CSS class của chip tương ứng với trạng thái thanh toán. */
+// Trả về CSS class của chip tương ứng với trạng thái thanh toán.
 function statusChipClass(status: PaymentStatus): string {
     switch (status) {
         case "PAID": return "chip chip-success";
@@ -17,7 +15,7 @@ function statusChipClass(status: PaymentStatus): string {
     }
 }
 
-/** Trả về nhãn hiển thị cho từng trạng thái thanh toán. */
+// Trả về nhãn hiển thị cho từng trạng thái thanh toán.
 function statusLabel(status: PaymentStatus): string {
     switch (status) {
         case "PAID": return "Paid";
@@ -27,10 +25,7 @@ function statusLabel(status: PaymentStatus): string {
     }
 }
 
-/**
- * Trả về CSS class của chip cho phương thức thanh toán.
- * method là string tự do — fallback về chip-primary nếu không khớp.
- */
+// Trả về CSS class của chip cho phương thức thanh toán.
 function methodChipClass(method: string): string {
     switch (method) {
         case "SEPAY": return "chip chip-primary";
@@ -39,9 +34,7 @@ function methodChipClass(method: string): string {
     }
 }
 
-// ─── Trạng thái lỗi ──────────────────────────────────────────────────────────
-
-/** Hiển thị hàng lỗi toàn bảng khi fetch thất bại. */
+// Hiển thị hàng lỗi toàn bảng khi fetch thất bại.
 function TableError({ message }: { message: string }) {
     return (
         <tr>
@@ -72,9 +65,7 @@ function TableError({ message }: { message: string }) {
     );
 }
 
-// ─── Trạng thái rỗng ─────────────────────────────────────────────────────────
-
-/** Hiển thị hàng thông báo khi không có giao dịch nào khớp filter. */
+// Hiển thị hàng thông báo khi không có giao dịch nào khớp filter.
 function TableEmpty() {
     return (
         <tr>
@@ -85,81 +76,64 @@ function TableEmpty() {
     );
 }
 
-// ─── Props ────────────────────────────────────────────────────────────────────
-
 interface PaymentTableProps {
-    /** Danh sách giao dịch từ server, null nếu fetch thất bại. */
+    // Danh sách giao dịch từ server, null nếu fetch thất bại.
     payments: AdminPaymentItem[] | null;
-    /** Thông báo lỗi từ server, hiển thị trực tiếp lên bảng nếu có. */
+    // Thông báo lỗi từ server, hiển thị trực tiếp lên bảng nếu có.
     error: string | null;
+    // Bộ lọc hiện tại lấy từ URL và truyền xuống từ Server Component.
+    filters: AdminPaymentsFilters;
 }
 
-// ─── Component chính ─────────────────────────────────────────────────────────
-
-export function PaymentTable({ payments, error }: PaymentTableProps) {
-    const router = useRouter();
-    const pathname = usePathname();
-    const searchParams = useSearchParams();
-
-    /*
-     * SOURCE OF TRUTH: URL search params.
-     * Các state dưới đây chỉ là bản nháp tạm thời cho UI input —
-     * được khởi tạo từ URL và chỉ được apply lên URL khi nhấn Apply.
-     * Mọi thay đổi URL (kể cả paste URL trực tiếp) sẽ luôn được phản ánh
-     * đúng vì useState() chạy lại mỗi khi component mount với URL mới.
-     */
-    const [search, setSearch] = useState(searchParams.get("search") ?? "");
-    const [status, setStatus] = useState(searchParams.get("status") ?? "");
-    const [from, setFrom] = useState(searchParams.get("from") ?? "");
-    const [to, setTo] = useState(searchParams.get("to") ?? "");
-
-    /**
-     * Apply filter: ghi các giá trị nháp lên URL.
-     * Next.js re-render server component → fetch lại API với filter mới.
-     * Chỉ set param nếu có giá trị, tránh query string thừa.
-     */
-    const handleApply = () => {
-        const params = new URLSearchParams();
-        if (search) params.set("search", search);
-        if (status) params.set("status", status);
-        if (from) params.set("from", from);
-        if (to) params.set("to", to);
-        router.push(`${pathname}?${params.toString()}`,{scroll:false});
-    };
-
-    /**
-     * Reset filter: xoá state nháp và đưa URL về pathname gốc (không có params).
-     */
-    const handleReset = () => {
-        setSearch(""); setStatus(""); setFrom(""); setTo("");
-        router.push(pathname,{ scroll: false });
-    };
-
+export function PaymentTable({ payments, error, filters }: PaymentTableProps) {
     const rows = payments ?? [];
+
+    // Timeout debounce riêng cho ô search để tránh submit sau từng phím.
+    const submitTimeoutRef = useRef<number | null>(null);
+
+    // Submit form bằng GET để cập nhật URL và để Server Component fetch lại API.
+    function submitFilter(form: HTMLFormElement, delay: number) {
+        if (submitTimeoutRef.current) {
+            window.clearTimeout(submitTimeoutRef.current);
+        }
+
+        submitTimeoutRef.current = window.setTimeout(() => {
+            form.requestSubmit();
+        }, delay);
+    }
 
     return (
         <article className="panel overflow-hidden">
-            {/* ── Tiêu đề & Bộ lọc ── */}
+            {/* Khu vực tiêu đề và bộ lọc */}
             <div className="flex flex-col gap-4">
                 <h2 className="section-title">Danh sách giao dịch</h2>
 
-                <div className="flex flex-wrap items-center gap-3">
-                    {/* Tìm kiếm theo transaction ref */}
+                <Form
+                    action="/admin/payments"
+                    className="grid w-full grid-cols-1 items-center gap-3 md:grid-cols-[minmax(220px,1fr)_180px] 2xl:grid-cols-[minmax(240px,280px)_180px_minmax(320px,1fr)]"
+                    onChange={(event) => {
+                        const delay = event.target instanceof HTMLInputElement && event.target.type === "text" ? 350 : 0;
+                        submitFilter(event.currentTarget, delay);
+                    }}
+                    replace
+                    scroll={false}
+                >
+                    {/* Tìm kiếm theo transaction ref hoặc order code */}
                     <input
-                        type="text"
+                        className="field-input h-11 w-full"
+                        defaultValue={filters.search}
+                        name="search"
                         placeholder="Transaction ref..."
-                        value={search}
-                        onChange={(e) => setSearch(e.target.value)}
-                        className="field-input field-inline w-full sm:w-52"
+                        type="text"
                     />
 
                     {/* Lọc theo trạng thái thanh toán */}
                     <select
-                        value={status}
-                        onChange={(e) => setStatus(e.target.value)}
-                        className="field-select w-full sm:w-36"
+                        className="field-select h-11 w-full"
+                        defaultValue={filters.statusFilter}
+                        name="status"
                     >
-                        <option value="">All status</option>
+                        <option value="ALL">All status</option>
                         <option value="PAID">Paid</option>
                         <option value="PAID_LATE">Paid late</option>
                         <option value="PENDING">Pending</option>
@@ -167,45 +141,36 @@ export function PaymentTable({ payments, error }: PaymentTableProps) {
                     </select>
 
                     {/* Lọc theo khoảng ngày thanh toán */}
-                    <div className="flex w-full sm:w-auto items-center gap-2">
+                    <div className="grid w-full grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2 md:col-span-2 md:max-w-[430px] 2xl:col-span-1 2xl:max-w-none">
                         <input
+                            className="field-input h-11 min-w-0"
+                            defaultValue={filters.from}
+                            name="from"
                             type="date"
-                            value={from}
-                            onChange={(e) => setFrom(e.target.value)}
-                            className="field-input field-inline w-full sm:w-36"
                         />
-                        <span className="text-slate-400 text-sm">–</span>
+                        <span className="text-sm text-slate-400">-</span>
                         <input
+                            className="field-input h-11 min-w-0"
+                            defaultValue={filters.to}
+                            name="to"
                             type="date"
-                            value={to}
-                            onChange={(e) => setTo(e.target.value)}
-                            className="field-input field-inline w-full sm:w-36"
                         />
                     </div>
 
-                    {/* Nút Apply và Reset */}
-                    <div className="flex w-full sm:w-auto items-center gap-2">
-                        <button type="button" onClick={handleApply} className="btn-primary">
-                            Apply
-                        </button>
-                        <button type="button" onClick={handleReset} className="btn-outline !px-4 !py-2.5 !text-sm !rounded-xl">
-                            Reset
-                        </button>
-                    </div>
-                </div>
+                </Form>
             </div>
 
-            {/* ── Bảng dữ liệu ── */}
-            <div className="mt-5 w-full overflow-auto max-h-[400px] rounded-lg border border-slate-100 scrollbar-glass">
-                <table className="w-full min-w-[640px] text-left text-sm border-collapse">
+            {/* Khu vực bảng dữ liệu */}
+            <div className="mt-5 max-h-[400px] w-full overflow-auto rounded-lg border border-slate-100 scrollbar-glass">
+                <table className="w-full min-w-[640px] border-collapse text-left text-sm">
                     <thead className="sticky top-0 z-10 bg-slate-50 shadow-[0_1px_0_rgba(226,232,240,1)]">
                         <tr className="text-slate-500">
-                            <th className="py-3 px-4 font-medium">Payment ID</th>
-                            <th className="py-3 px-4 font-medium">Order code</th>
-                            <th className="py-3 px-4 font-medium">Method</th>
-                            <th className="py-3 px-4 font-medium">Status</th>
-                            <th className="py-3 px-4 font-medium">Transaction ref</th>
-                            <th className="py-3 px-4 font-medium">Paid at</th>
+                            <th className="px-4 py-3 font-medium">Payment ID</th>
+                            <th className="px-4 py-3 font-medium">Order code</th>
+                            <th className="px-4 py-3 font-medium">Method</th>
+                            <th className="px-4 py-3 font-medium">Status</th>
+                            <th className="px-4 py-3 font-medium">Transaction ref</th>
+                            <th className="px-4 py-3 font-medium">Paid at</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -215,23 +180,23 @@ export function PaymentTable({ payments, error }: PaymentTableProps) {
                         ) : rows.length === 0 ? (
                             <TableEmpty />
                         ) : (
-                            rows.map((p) => (
+                            rows.map((payment) => (
                                 <tr
-                                    key={p.id}
+                                    key={payment.id}
                                     className="border-b border-slate-100 transition-colors hover:bg-slate-50/50"
                                 >
-                                    <td className="py-3 px-4 font-semibold text-slate-800">#{p.id}</td>
-                                    <td className="py-3 px-4 text-slate-700">{p.orderCode}</td>
-                                    <td className="py-3 px-4">
-                                        <span className={methodChipClass(p.method)}>{p.method}</span>
+                                    <td className="px-4 py-3 font-semibold text-slate-800">#{payment.id}</td>
+                                    <td className="px-4 py-3 text-slate-700">{payment.orderCode}</td>
+                                    <td className="px-4 py-3">
+                                        <span className={methodChipClass(payment.method)}>{payment.method}</span>
                                     </td>
-                                    <td className="py-3 px-4">
-                                        <span className={statusChipClass(p.status)}>{statusLabel(p.status)}</span>
+                                    <td className="px-4 py-3">
+                                        <span className={statusChipClass(payment.status)}>{statusLabel(payment.status)}</span>
                                     </td>
-                                    <td className="py-3 px-4 font-mono text-xs text-slate-500">{p.transactionRef}</td>
-                                    <td className="py-3 px-4 text-slate-600">
-                                        {p.paidAt
-                                            ? formatLocalDateTime(p.paidAt)
+                                    <td className="px-4 py-3 font-mono text-xs text-slate-500">{payment.transactionRef}</td>
+                                    <td className="px-4 py-3 text-slate-600">
+                                        {payment.paidAt
+                                            ? formatLocalDateTime(payment.paidAt)
                                             : <span className="text-slate-300">—</span>
                                         }
                                     </td>

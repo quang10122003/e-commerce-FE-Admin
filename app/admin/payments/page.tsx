@@ -10,7 +10,7 @@ import {
 } from "@/server/admin-payment";
 import { serverPrivateFetch } from "@/server/backend-fetch";
 import { NextSearchParams } from "@/types/next";
-import { AdminPaymentItem, AdminPaymentsFilters, AdminPaymentsResponse } from "@/types/payment";
+import { AdminPaymentsFilters, AdminPaymentsResponse } from "@/types/payment";
 
 // ─── Fetch dữ liệu từ backend ─────────────────────────────────────────────────
 
@@ -46,8 +46,8 @@ export default async function PaymentsPage({
   searchParams: NextSearchParams;
 }) {
   const params = await searchParams;
-  const filter = parseAdminPaymentsFilters(params);
-  const { data, error } = await getAdminPayments(filter);
+  const filters = parseAdminPaymentsFilters(params);
+  const { data, error } = await getAdminPayments(filters);
 
   // Tách item và stats từ response
   const payments = data?.item ?? null;
@@ -65,7 +65,7 @@ export default async function PaymentsPage({
       <PaymentStatsRow dataOver={paymentStats}/>
 
       <div className="mt-6 grid gap-5 grid-cols-1 xl:grid-cols-[2.5fr_1fr]">
-        <PaymentTable payments={payments} error={error} />
+        <PaymentTable payments={payments} error={error} filters={filters} />
         <PaymentStatusRatio dataOver={paymentStats} />
       </div>
     </section>

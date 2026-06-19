@@ -1,174 +1,81 @@
 import { ClipboardList, MapPin, Truck } from "lucide-react";
+import { OrdersPanel } from "@/components/admin/order/OrdersPanel";
 import { PageHeader } from "@/components/admin/PageHeader";
 import { StatCard } from "@/components/admin/StatCard";
-import { StatusBadge } from "@/components/admin/StatusBadge";
+import { getApiErrorMessage } from "@/lib/util/apiError";
+import {
+  buildAdminOrdersBackendPath,
+  buildAdminOrdersQueryParams,
+  parseAdminOrdersFilters,
+} from "@/server/admin-orders";
+import { serverPrivateFetch } from "@/server/backend-fetch";
+import { NextSearchParams } from "@/types/next";
+import { AdminOrdersFilters, AdminOrdersResponse } from "@/types/order";
 
-const orders = [
-  {
-    id: "ORD-3001",
-    userId: 2,
-    status: "PENDING",
-    shippingName: "Nguyen Van An",
-    shippingPhone: "0901234567",
-    shippingAddress: "12 Nguyen Trai, Q1, HCM",
-    totalAmount: "2,540,000",
-    createdAt: "2026-04-18 09:34",
-    items: [
-      { name: "iPhone 16 Pro 256GB", category: "Dien thoai", quantity: 1, price: "31,990,000" },
-      { name: "Op lung Carbon", category: "Phu kien", quantity: 1, price: "550,000" },
-    ],
-  },
-  {
-    id: "ORD-3002",
-    userId: 4,
-    status: "SHIPPING",
-    shippingName: "Pham Van Cuong",
-    shippingPhone: "0911223344",
-    shippingAddress: "88 Le Loi, Da Nang",
-    totalAmount: "5,180,000",
-    createdAt: "2026-04-18 12:21",
-    items: [
-      { name: "May loc khong khi AirHome", category: "Gia dung", quantity: 1, price: "3,290,000" },
-      { name: "Bo loc du phong", category: "Gia dung", quantity: 2, price: "945,000" },
-    ],
-  },
-  {
-    id: "ORD-3003",
-    userId: null,
-    status: "COMPLETED",
-    shippingName: "Guest Checkout",
-    shippingPhone: "0987766554",
-    shippingAddress: "21 Tran Hung Dao, Ha Noi",
-    totalAmount: "890,000",
-    createdAt: "2026-04-17 14:02",
-    items: [{ name: "Tai nghe Bluetooth MaxSound", category: "Phu kien", quantity: 1, price: "890,000" }],
-  },
-];
+// Gọi API lấy danh sách đơn hàng theo bộ lọc.
+async function getAdminOrders(filters: AdminOrdersFilters): Promise<{
+  data: AdminOrdersResponse | null;
+  error: string | null;
+}> {
+  try {
+    const result = await serverPrivateFetch<AdminOrdersResponse>(
+      buildAdminOrdersBackendPath(buildAdminOrdersQueryParams(filters)),
+    );
 
-export default function OrdersPage() {
+    return {
+      data: result.data,
+      error: null,
+    };
+  } catch (err) {
+    return {
+      data: null,
+      error: getApiErrorMessage(err, "Không thể tải danh sách đơn hàng."),
+    };
+  }
+}
+
+export default async function OrdersPage({
+  searchParams,
+}: {
+  searchParams: NextSearchParams;
+}) {
+  const params = await searchParams;
+  const filters = parseAdminOrdersFilters(params);
+  const { data, error } = await getAdminOrders(filters);
+  const orders = data?.item ?? null;
+
   return (
     <section>
       <PageHeader
-        description="Theo doi orders/order_items, trang thai van chuyen va thong tin giao hang."
+        description="Theo dõi orders/order_items, trạng thái vận chuyển và thông tin giao hàng."
         title="Orders Management"
       />
 
+      {/* Khu vực thống kê tổng quan đơn hàng */}
       <div className="grid gap-4 md:grid-cols-3">
         <StatCard
           icon={<ClipboardList className="size-5" />}
-          note="Tong don moi trong ngay"
-          title="Don hom nay"
-          value="74"
+          note="Tổng đơn mới trong ngày"
+          title="Đơn hôm nay"
+          value={data?.today?.toLocaleString("vi-VN") ?? "—"}
         />
         <StatCard
           icon={<Truck className="size-5" />}
-          note="Don dang giao boi doi van chuyen"
-          title="Dang shipping"
+          note="Đơn đang chờ xử lý"
+          title="PENDING"
           tone="amber"
-          value="39"
+          value={data?.pending?.toLocaleString("vi-VN") ?? "—"}
         />
         <StatCard
           icon={<MapPin className="size-5" />}
-          note="Ti le giao thanh cong 7 ngay"
+          note="Tỉ lệ giao thành công 7 ngày"
           title="Delivery success"
           tone="emerald"
-          value="96.2%"
+          value={data ? `${data.deliverySuccessRate}%` : "—"}
         />
       </div>
 
-      <article className="panel mt-6">
-        <div className="flex flex-wrap items-center gap-3">
-          <input
-            className="field-input field-inline field-input-compact flex-1"
-            placeholder="Tim theo order id / so dien thoai..."
-            type="text"
-          />
-          <select className="field-select h-10">
-            <option>Tat ca status</option>
-            <option>PENDING</option>
-            <option>SHIPPING</option>
-            <option>COMPLETED</option>
-            <option>CANCELLED</option>
-          </select>
-        </div>
-
-        <div className="mt-5 space-y-4">
-          {orders.map((order) => (
-            <div className="card-subtle" key={order.id}>
-              <div className="flex flex-wrap items-start justify-between gap-3">
-                <div>
-                  <p className="text-sm text-slate-500">Order ID</p>
-                  <p className="text-lg font-bold text-slate-900">{order.id}</p>
-                </div>
-                <div className="text-sm text-slate-600">
-                  <p>Created: {order.createdAt}</p>
-                  <p>User ID: {order.userId ?? "Guest"}</p>
-                </div>
-                <div className="flex items-center gap-2">
-                  <StatusBadge
-                    tone={
-                      order.status === "COMPLETED"
-                        ? "success"
-                        : order.status === "PENDING"
-                          ? "warning"
-                          : order.status === "CANCELLED"
-                            ? "danger"
-                            : "info"
-                    }
-                  >
-                    {order.status}
-                  </StatusBadge>
-                  <span className="chip chip-primary">{order.totalAmount} VND</span>
-                </div>
-              </div>
-
-              <div className="mt-4 grid grid-cols-[1.2fr_1fr] gap-4">
-                <div className="panel-muted border-slate-200 bg-white">
-                  <p className="text-sm font-semibold text-slate-800">Order items</p>
-                  <div className="mt-3 space-y-2">
-                    {order.items.map((item, index) => (
-                      <div className="card-item" key={`${order.id}-${index + 1}`}>
-                        <div>
-                          <p className="font-medium text-slate-800">{item.name}</p>
-                          <p className="text-xs text-slate-500">{item.category}</p>
-                        </div>
-                        <div className="text-right">
-                          <p className="font-medium text-slate-800">x{item.quantity}</p>
-                          <p className="text-xs text-slate-500">{item.price}</p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="panel-muted border-slate-200 bg-white">
-                  <p className="text-sm font-semibold text-slate-800">Shipping info</p>
-                  <div className="mt-3 space-y-1.5 text-sm text-slate-700">
-                    <p>
-                      <span className="font-medium">Nguoi nhan:</span> {order.shippingName}
-                    </p>
-                    <p>
-                      <span className="font-medium">Dien thoai:</span> {order.shippingPhone}
-                    </p>
-                    <p>
-                      <span className="font-medium">Dia chi:</span> {order.shippingAddress}
-                    </p>
-                  </div>
-
-                  <div className="mt-4 flex items-center gap-2">
-                    <button className="btn-outline" type="button">
-                      Cap nhat status
-                    </button>
-                    <button className="btn-outline-danger" type="button">
-                      Huy don
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </article>
+      <OrdersPanel error={error} filters={filters} orders={orders} />
     </section>
   );
 }
