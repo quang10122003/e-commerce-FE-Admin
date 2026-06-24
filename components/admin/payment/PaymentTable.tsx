@@ -1,7 +1,7 @@
 "use client";
 
 import Form from "next/form";
-import { useRef } from "react";
+import { useDebouncedFormSubmit } from "@/hooks/use-debounced-form-submit";
 import { formatLocalDateTime } from "@/lib/util/formatDateTime";
 import type { AdminPaymentItem, AdminPaymentsFilters, PaymentStatus } from "@/types/payment";
 
@@ -87,20 +87,7 @@ interface PaymentTableProps {
 
 export function PaymentTable({ payments, error, filters }: PaymentTableProps) {
     const rows = payments ?? [];
-
-    // Timeout debounce riêng cho ô search để tránh submit sau từng phím.
-    const submitTimeoutRef = useRef<number | null>(null);
-
-    // Submit form bằng GET để cập nhật URL và để Server Component fetch lại API.
-    function submitFilter(form: HTMLFormElement, delay: number) {
-        if (submitTimeoutRef.current) {
-            window.clearTimeout(submitTimeoutRef.current);
-        }
-
-        submitTimeoutRef.current = window.setTimeout(() => {
-            form.requestSubmit();
-        }, delay);
-    }
+    const submitFilter = useDebouncedFormSubmit();
 
     return (
         <article className="panel overflow-hidden">

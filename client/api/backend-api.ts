@@ -11,6 +11,10 @@ import type { ApiResponse } from "@/types/api";
 import type { AuthResponse, LoginRequest } from "@/types/auth";
 import type { CategorySummaryResponse } from "@/types/categories";
 import type {
+  AdminOrderItem,
+  UpdateAdminOrderStatusRequest,
+} from "@/types/order";
+import type {
   AdminCreateProductRequest,
   AdminProductStatusRequest,
   AdminProductStatusResponse,
@@ -287,10 +291,20 @@ export const backendApi = createApi({
           method:"PATCH"
         }
       )
+    }),
+    updateAdminOrderStatus: builder.mutation<
+      ApiResponse<AdminOrderItem>,
+      UpdateAdminOrderStatusRequest
+    >({
+      invalidatesTags: [{ id: "LIST", type: "AdminOrders" }],
+      query: ({ orderId, status }) => ({
+        method: "POST",
+        url: `/admin/orders/${orderId}/${status}`,
+      }),
     })
   }),
   reducerPath: "backendApi",
-  tagTypes: ["AdminCategories", "AdminProducts", "AdminUsers", "AdminChatRooms", "Auth"],
+  tagTypes: ["AdminCategories", "AdminProducts", "AdminUsers", "AdminOrders", "AdminChatRooms", "Auth"],
 });
 
 export const {
@@ -308,5 +322,6 @@ export const {
   useUpdateCategoryMutation,
   useUpdateProductMutation,
   useDeleteProductMutation,
+  useUpdateAdminOrderStatusMutation,
   useUpdateStatusProductMutation
 } = backendApi;

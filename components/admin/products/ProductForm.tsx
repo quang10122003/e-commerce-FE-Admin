@@ -24,7 +24,7 @@ type ProductFormValues = {
   images: FileList;
 };
 
-// Props truyền từ ProductsClinet xuống để form biết đang idle/create/edit và dữ liệu edit là gì.
+// Props truyền từ ProductsClient xuống để form biết đang idle/create/edit và dữ liệu edit là gì.
 type ProductFormProps = {
   categories: CategorySummaryResponse[];
   mode: ProductFormMode;

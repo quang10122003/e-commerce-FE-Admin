@@ -1,7 +1,7 @@
 "use client";
 
-import { useRef } from "react";
 import Form from "next/form";
+import { useDebouncedFormSubmit } from "@/hooks/use-debounced-form-submit";
 import type { CategorySummaryResponse } from "@/types/categories";
 import type { AdminProductsFilters } from "@/types/product";
 
@@ -14,19 +14,7 @@ type ProductFiltersProps = {
 };
 
 export function ProductFilters({ categories, filters, errorCategory }: ProductFiltersProps) {
-  // Timeout debounce rieng cho o search, tranh submit lai URL sau moi ky tu.
-  const submitTimeoutRef = useRef<number | null>(null);
-
-  // Submit form bang GET de Next cap nhat search params va Server Component fetch lai data.
-  function submitFilter(form: HTMLFormElement, delay: number) {
-    if (submitTimeoutRef.current) {
-      window.clearTimeout(submitTimeoutRef.current);
-    }
-
-    submitTimeoutRef.current = window.setTimeout(() => {
-      form.requestSubmit();
-    }, delay);
-  }
+  const submitFilter = useDebouncedFormSubmit();
 
   return (
     <Form

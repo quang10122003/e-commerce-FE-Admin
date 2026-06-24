@@ -2,6 +2,8 @@ export type OrderStatus = "PENDING" | "SHIPPING" | "COMPLETED" | "CANCELLED";
 
 export type OrderStatusFilter = OrderStatus | "ALL";
 
+export type CancelledBy = "USER" | "ADMIN";
+
 export interface AdminOrderProductItem {
   id: number;
   productId: number | null;
@@ -17,8 +19,10 @@ export interface AdminOrderItem {
   orderCode: string;
   userId: number | null;
   status: OrderStatus;
+  cancelledBy: CancelledBy | null;
   shippingName: string;
   shippingPhone: string;
+  paymentMethod:string
   shippingAddress: string;
   totalAmount: number;
   createdAt: string;
@@ -55,4 +59,9 @@ export interface AdminOrdersSearchParams {
   status?: string | string[];
   from?: string | string[];
   to?: string | string[];
+}
+
+export interface UpdateAdminOrderStatusRequest {
+  orderId: number;
+  status: OrderStatus;
 }

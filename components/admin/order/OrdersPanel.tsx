@@ -1,7 +1,17 @@
-"use client";
+﻿"use client";
 
-import { useRef } from "react";
 import Form from "next/form";
+import { useRouter } from "next/navigation";
+import { useState, useTransition } from "react";
+import { useUpdateAdminOrderStatusMutation } from "@/client/api/backend-api";
+import { useNotification } from "@/components/ui/BrowserNotification";
+import {
+  getAdminOrderStatusActions,
+  getAdminOrderStatusConfirmMessage,
+  getAdminOrderStatusSuccessMessage,
+} from "@/features/order/services/admin-order-status-service";
+import { useDebouncedFormSubmit } from "@/hooks/use-debounced-form-submit";
+import { getApiErrorMessage } from "@/lib/util/apiError";
 import { formatCurrency } from "@/lib/util/formatCurrency";
 import { formatLocalDateTime } from "@/lib/util/formatDateTime";
 import type { AdminOrderItem, AdminOrdersFilters, OrderStatus } from "@/types/order";
@@ -26,12 +36,13 @@ function getOrderStatusTone(status: OrderStatus) {
       return "info";
   }
 }
-
 // Hiển thị thông báo lỗi khi không lấy được dữ liệu.
 function OrdersError({ message }: { message: string }) {
   return (
     <div className="rounded-lg border border-rose-100 bg-rose-50 px-4 py-8 text-center">
-      <p className="text-sm font-semibold text-rose-700">Không thể tải danh sách đơn hàng</p>
+      <p className="text-sm font-semibold text-rose-700">
+        Không thể tải danh sách đơn hàng
+      </p>
       <p className="mt-1 text-xs text-rose-500">{message}</p>
     </div>
   );
@@ -47,20 +58,64 @@ function OrdersEmpty() {
 }
 
 export function OrdersPanel({ error, filters, orders }: OrdersPanelProps) {
+  const router = useRouter();
   const rows = orders ?? [];
+  const submitFilter = useDebouncedFormSubmit();
+  const { showNotification } = useNotification();
+  const [isRoutePending, startRouteTransition] = useTransition();
+  const [activeActionKey, setActiveActionKey] = useState<string | null>(null);
+  const [updateAdminOrderStatus] = useUpdateAdminOrderStatusMutation();
 
-  // Timeout debounce riêng cho ô search để hạn chế submit lại URL liên tục.
-  const submitTimeoutRef = useRef<number | null>(null);
+  // Làm mới dữ liệu server sau khi API cập nhật trạng thái thành công.
+  function refreshOrders() {
+    startRouteTransition(() => {
+      router.refresh();
+    });
+  }
 
-  // Submit form bằng GET để cập nhật URL và để Server Component fetch lại API.
-  function submitFilter(form: HTMLFormElement, delay: number) {
-    if (submitTimeoutRef.current) {
-      window.clearTimeout(submitTimeoutRef.current);
+  // Gọi API cập nhật trạng thái đơn hàng và hiển thị thông báo kết quả.
+  async function handleUpdateOrderStatus(order: AdminOrderItem, status: OrderStatus) {
+    const confirmed = window.confirm(
+      getAdminOrderStatusConfirmMessage(order, status),
+    );
+
+    if (!confirmed) {
+      return;
     }
 
-    submitTimeoutRef.current = window.setTimeout(() => {
-      form.requestSubmit();
-    }, delay);
+    const actionKey = `${order.id}-${status}`;
+    setActiveActionKey(actionKey);
+
+    try {
+      const payload = await updateAdminOrderStatus({
+        orderId: order.id,
+        status,
+      }).unwrap();
+
+      if (!payload.success) {
+        throw new Error(
+          getApiErrorMessage(
+            payload,
+            "Không thể cập nhật trạng thái đơn hàng.",
+          )
+        );
+      }
+
+      showNotification(getAdminOrderStatusSuccessMessage(status), {
+        tone: "success",
+      });
+      refreshOrders();
+    } catch (err) {
+      showNotification(
+        getApiErrorMessage(
+          err,
+          "Không thể cập nhật trạng thái đơn hàng.",
+        ),
+        { tone: "error" },
+      );
+    } finally {
+      setActiveActionKey(null);
+    }
   }
 
   return (
@@ -121,7 +176,10 @@ export function OrdersPanel({ error, filters, orders }: OrdersPanelProps) {
         ) : rows.length === 0 ? (
           <OrdersEmpty />
         ) : (
-          rows.map((order) => (
+          rows.map((order) => {
+            const statusActions = getAdminOrderStatusActions(order);
+
+            return (
             <div className="card-subtle" key={order.id}>
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
@@ -136,12 +194,17 @@ export function OrdersPanel({ error, filters, orders }: OrdersPanelProps) {
                   <StatusBadge tone={getOrderStatusTone(order.status)}>
                     {order.status}
                   </StatusBadge>
+                  {order.cancelledBy ? (
+                      <span className="chip">
+                        Hủy bởi {order.cancelledBy}
+                      </span>
+                  ) : null}
                   <span className="chip chip-primary">{formatCurrency(order.totalAmount)}</span>
                 </div>
               </div>
 
               <div className="mt-4 grid gap-4 lg:grid-cols-[1.2fr_1fr]">
-                {/* Khu vực sản phẩm trong đơn */}
+                  {/* Khu vực sản phẩm trong đơn */}
                 <div className="panel-muted border-slate-200 bg-white">
                   <p className="text-sm font-semibold text-slate-800">Order items</p>
                   <div className="mt-3 space-y-2">
@@ -149,7 +212,7 @@ export function OrdersPanel({ error, filters, orders }: OrdersPanelProps) {
                       <div className="card-item" key={item.id}>
                         <div>
                           <p className="font-medium text-slate-800">{item.name}</p>
-                          <p className="text-xs text-slate-500">{item.category ?? "Chưa phân loại"}</p>
+                          <p className="text-xs text-slate-500">danh mục:{item.category ?? "Chưa phân loại"}</p>
                         </div>
                         <div className="text-right">
                           <p className="font-medium text-slate-800">x{item.quantity}</p>
@@ -160,35 +223,63 @@ export function OrdersPanel({ error, filters, orders }: OrdersPanelProps) {
                   </div>
                 </div>
 
-                {/* Khu vực thông tin giao hàng */}
+                  {/* Khu vực thông tin giao hàng */}
                 <div className="panel-muted border-slate-200 bg-white">
                   <p className="text-sm font-semibold text-slate-800">Shipping info</p>
                   <div className="mt-3 space-y-1.5 text-sm text-slate-700">
                     <p>
-                      <span className="font-medium">Người nhận:</span> {order.shippingName}
+                        <span className="font-medium">Người nhận:</span> {order.shippingName}
                     </p>
                     <p>
-                      <span className="font-medium">Điện thoại:</span> {order.shippingPhone}
+                        <span className="font-medium">Điện thoại:</span> {order.shippingPhone}
                     </p>
                     <p>
-                      <span className="font-medium">Địa chỉ:</span> {order.shippingAddress}
+                        <span className="font-medium">Địa chỉ:</span> {order.shippingAddress}
                     </p>
+                      <p>
+                        <span className="font-medium">Phương thức thanh toán:</span> {order.paymentMethod}
+                      </p>
                   </div>
 
-                  <div className="mt-4 flex items-center gap-2">
-                    <button className="btn-outline" type="button">
-                      Cập nhật status
-                    </button>
-                    <button className="btn-outline-danger" type="button">
-                      Hủy đơn
-                    </button>
+                  <div className="mt-4 flex flex-wrap items-center gap-2">
+                    {statusActions.length ? (
+                      statusActions.map((action) => {
+                        const actionKey = `${order.id}-${action.status}`;
+                        const isUpdating =
+                          activeActionKey === actionKey || isRoutePending;
+
+                        return (
+                          <button
+                            className={
+                              action.tone === "danger"
+                                ? "btn-outline-danger"
+                                : "btn-outline"
+                            }
+                            disabled={isUpdating}
+                            key={action.status}
+                            onClick={() => {
+                              void handleUpdateOrderStatus(order, action.status);
+                            }}
+                            type="button"
+                          >
+                            {isUpdating ? "Đang xử lý..." : action.label}
+                          </button>
+                        );
+                      })
+                    ) : (
+                      <span className="text-xs font-medium text-slate-400">
+                        Không còn thao tác trạng thái
+                      </span>
+                    )}
                   </div>
                 </div>
               </div>
             </div>
-          ))
+            );
+          })
         )}
       </div>
     </article>
   );
 }
+

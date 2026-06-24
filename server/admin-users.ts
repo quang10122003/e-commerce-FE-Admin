@@ -1,22 +1,12 @@
 import "server-only";
 
+import { readSearchParam } from "@/lib/util/readSearchParam";
 import {
   ADMIN_USERS_PAGE_SIZE,
   AdminUsersSearchParams,
   type AdminUsersFilters,
   type AdminUsersQueryParams,
 } from "@/types/users";
-
-function readSearchParam(
-  value: string | string[] | undefined,
-  fallback = "",
-) {
-  if (Array.isArray(value)) {
-    return value[0] ?? fallback;
-  }
-
-  return value ?? fallback;
-}
 
 export function buildAdminUsersSearchParams(params: AdminUsersQueryParams) {
   const searchParams = new URLSearchParams();
@@ -72,4 +62,3 @@ export function buildAdminUsersQueryParams(filters: AdminUsersFilters) {
     status: filters.statusFilter === "ALL" ? undefined : filters.statusFilter,
   } satisfies AdminUsersQueryParams;
 }
-

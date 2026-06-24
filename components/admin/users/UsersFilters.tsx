@@ -1,7 +1,7 @@
 "use client";
 
-import { useRef } from "react";
 import Form from "next/form";
+import { useDebouncedFormSubmit } from "@/hooks/use-debounced-form-submit";
 import type { RoleState } from "@/types/roles";
 import type { AdminUsersFilters } from "@/types/users";
 import { UserRoleOptions } from "./UserRoleOptions";
@@ -15,17 +15,7 @@ export function UsersFilters({
   filters,
   roleState,
 }: UsersFiltersProps) {
-  const submitTimeoutRef = useRef<number | null>(null);
-
-  function submitFilter(form: HTMLFormElement, delay: number) {
-    if (submitTimeoutRef.current) {
-      window.clearTimeout(submitTimeoutRef.current);
-    }
-
-    submitTimeoutRef.current = window.setTimeout(() => {
-      form.requestSubmit();
-    }, delay);
-  }
+  const submitFilter = useDebouncedFormSubmit();
 
   return (
     <Form

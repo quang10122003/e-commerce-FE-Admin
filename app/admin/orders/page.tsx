@@ -2,37 +2,9 @@ import { ClipboardList, MapPin, Truck } from "lucide-react";
 import { OrdersPanel } from "@/components/admin/order/OrdersPanel";
 import { PageHeader } from "@/components/admin/PageHeader";
 import { StatCard } from "@/components/admin/StatCard";
-import { getApiErrorMessage } from "@/lib/util/apiError";
-import {
-  buildAdminOrdersBackendPath,
-  buildAdminOrdersQueryParams,
-  parseAdminOrdersFilters,
-} from "@/server/admin-orders";
-import { serverPrivateFetch } from "@/server/backend-fetch";
+import { getAdminOrders } from "@/features/order/services/admin-order-service";
+import { parseAdminOrdersFilters } from "@/server/admin-orders";
 import { NextSearchParams } from "@/types/next";
-import { AdminOrdersFilters, AdminOrdersResponse } from "@/types/order";
-
-// Gọi API lấy danh sách đơn hàng theo bộ lọc.
-async function getAdminOrders(filters: AdminOrdersFilters): Promise<{
-  data: AdminOrdersResponse | null;
-  error: string | null;
-}> {
-  try {
-    const result = await serverPrivateFetch<AdminOrdersResponse>(
-      buildAdminOrdersBackendPath(buildAdminOrdersQueryParams(filters)),
-    );
-
-    return {
-      data: result.data,
-      error: null,
-    };
-  } catch (err) {
-    return {
-      data: null,
-      error: getApiErrorMessage(err, "Không thể tải danh sách đơn hàng."),
-    };
-  }
-}
 
 export default async function OrdersPage({
   searchParams,

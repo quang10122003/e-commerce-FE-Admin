@@ -5,42 +5,20 @@ import { UserEditPanel } from "@/components/admin/users/UserEditPanel";
 import { UsersFilters } from "@/components/admin/users/UsersFilters";
 import { UsersTable } from "@/components/admin/users/UsersTable";
 import { Pagination } from "@/components/ui/Pagination";
-import { buildUsersPageHref } from "@/lib/admin/users-url";
-import type { Role, RoleState } from "@/types/roles";
+import { createAdminUsersViewModel } from "@/features/user/mappers/admin-user-view-model";
 import type {
-  AdminUsersFilters,
-  UserItem,
-  UserListData,
-  UserStats,
-} from "@/types/users";
+  AdminUsersInitialData,
+  AdminUsersInitialError,
+} from "@/features/user/services/admin-user-service";
+import { buildUsersPageHref } from "@/lib/admin/users-url";
+import type { AdminUsersFilters } from "@/types/users";
 
 type UsersPageClientProps = {
-  data: {
-    roles: Role[] | null;
-    users: UserListData | null;
-  };
+  data: AdminUsersInitialData;
   editingUserId: number | null;
-  error: {
-    errorRoles: string | null;
-    errorUsers: string | null;
-  };
+  error: AdminUsersInitialError;
   filters: AdminUsersFilters;
 };
-
-const EMPTY_STATS: UserStats = {
-  adminUsers: 0,
-  lockedUsers: 0,
-  totalUsers: 0,
-};
-const EMPTY_USERS: UserItem[] = [];
-
-function findEditingUser(users: UserItem[], editingUserId: number | null) {
-  if (!editingUserId) {
-    return null;
-  }
-
-  return users.find((user) => user.id === editingUserId) ?? null;
-}
 
 export function UsersPageClient({
   data,
@@ -48,39 +26,20 @@ export function UsersPageClient({
   error,
   filters,
 }: UsersPageClientProps) {
-  const usersPage = data.users?.users;
-  const users = usersPage?.items ?? EMPTY_USERS;
-  const stats = data.users?.stats ?? EMPTY_STATS;
-  const totalItems = usersPage?.totalItems ?? 0;
-  const totalPages = Math.max(usersPage?.totalPages ?? 1, 1);
-  const currentPage = Math.min(Math.max(filters.currentPage, 1), totalPages);
-  const editingUser = findEditingUser(users, editingUserId);
-  const activeUserId = editingUser?.id ?? null;
-
-  const roleState: RoleState = {
-    data: data.roles,
-    error: error.errorRoles,
-    isLoading: false,
-  };
-
-  const closeEditHref = buildUsersPageHref({
+  const {
+    activeUserId,
+    closeEditHref,
+    editingUser,
+    pagination,
+    roleState,
+    stats,
+    users,
+  } = createAdminUsersViewModel({
+    data,
+    editingUserId,
+    errorRoles: error.errorRoles,
     filters,
-    page: currentPage,
   });
-  const previousHref =
-    currentPage > 1
-      ? buildUsersPageHref({
-          filters,
-          page: currentPage - 1,
-        })
-      : undefined;
-  const nextHref =
-    currentPage < totalPages
-      ? buildUsersPageHref({
-          filters,
-          page: currentPage + 1,
-        })
-      : undefined;
 
   return (
     <section>
@@ -131,7 +90,7 @@ export function UsersPageClient({
               buildUsersPageHref({
                 editingUserId: userId,
                 filters,
-                page: currentPage,
+                page: pagination.currentPage,
               })
             }
             statusFilter={filters.statusFilter}
@@ -139,12 +98,12 @@ export function UsersPageClient({
           />
 
           <Pagination
-            currentPage={currentPage}
+            currentPage={pagination.currentPage}
             itemLabel="users"
-            nextHref={nextHref}
-            previousHref={previousHref}
-            totalItems={totalItems}
-            totalPages={totalPages}
+            nextHref={pagination.nextHref}
+            previousHref={pagination.previousHref}
+            totalItems={pagination.totalItems}
+            totalPages={pagination.totalPages}
           />
         </article>
 
