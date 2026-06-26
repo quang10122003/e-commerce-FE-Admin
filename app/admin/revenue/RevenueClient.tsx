@@ -62,14 +62,14 @@ export function RevenueClient({ filters, data, error }: RevenuePanelProps) {
                         <h3 className="text-base font-semibold text-slate-900">Xu hướng doanh thu</h3>
                         <span className="chip chip-primary">Đơn vị: triệu đồng</span>
                     </div>
-                    <RevenueTrendChart data={data?.trendSeries ?? []} />
+                    <RevenueTrendChart data={data?.trendSeries } error={error} />
                 </div>
                 <div className="panel">
                     <div className="mb-4 flex items-center justify-between">
                         <h3 className="text-base font-semibold text-slate-900">So sánh kỳ liền kề</h3>
                         <span className="chip chip-primary">{comparisonLabel}</span>
                     </div>
-                    <RevenueComparisonChart data={data?.comparisonSeries ?? []} />
+                    <RevenueComparisonChart data={data?.comparisonSeries } error ={error}/>
                 </div>
             </div>
         </section>

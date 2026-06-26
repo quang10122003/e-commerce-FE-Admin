@@ -4,7 +4,7 @@ export default function UsersLoading() {
   return (
     <AdminRouteLoading
       description="Quản lý users, role và trạng thái lock theo dữ liệu backend."
-      label="Đang tải dữ liệu users..."
+      label="Đang thống kê doanh thu..."
       title="Users Management"
     />
   );
