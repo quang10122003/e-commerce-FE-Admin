@@ -8,6 +8,7 @@ import {
 import { serverPrivateFetch } from "@/server/backend-fetch";
 import type { CategorySummaryResponse } from "@/types/categories";
 import type { AdminProductListData, AdminProductsFilters } from "@/types/product";
+import { RevenueFilters } from "@/types/revenue";
 
 const CATEGORY_API = "admin/categorie";
 
@@ -51,3 +52,5 @@ export async function getAdminProductInitialData(
     },
   };
 }
+
+

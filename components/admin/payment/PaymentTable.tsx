@@ -2,7 +2,7 @@
 
 import Form from "next/form";
 import { useDebouncedFormSubmit } from "@/hooks/use-debounced-form-submit";
-import { formatLocalDateTime } from "@/lib/util/formatDateTime";
+import { formatLocalDateTime } from "@/lib/util/Date";
 import type { AdminPaymentItem, AdminPaymentsFilters, PaymentStatus } from "@/types/payment";
 
 // Trả về CSS class của chip tương ứng với trạng thái thanh toán.

@@ -2,7 +2,7 @@ import Link from "next/link";
 import { MessageCircle, Package, UserRound } from "lucide-react";
 import { StatusBadge } from "@/components/admin/StatusBadge";
 import { cn } from "@/lib/util/cn";
-import { formatLocalDateTime } from "@/lib/util/formatDateTime";
+import { formatLocalDateTime } from "@/lib/util/Date";
 import type { ChatRoom } from "@/types/chat";
 
 type ChatRoomCardProps = {

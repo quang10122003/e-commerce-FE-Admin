@@ -1,4 +1,4 @@
-// Chuẩn hóa search param về string, lấy phần tử đầu nếu là array.
+// đoc param
 export function readSearchParam(
   value: string | string[] | undefined,
   fallback = "",

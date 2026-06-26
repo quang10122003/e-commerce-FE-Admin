@@ -39,3 +39,21 @@ export function formatCurrency(value: number) {
 
   return `${currencyFormatter.format(value)} vnd`;
 }
+
+
+
+/** Định dạng đầy đủ (ví dụ: 86.400.000 ₫) */
+export function formatVND(value: number): string {
+  return new Intl.NumberFormat("vi-VN", {
+    style: "currency",
+    currency: "VND",
+    maximumFractionDigits: 0,
+  }).format(value);
+}
+
+/** Định dạng rút gọn (ví dụ: 4.13 tỷ, 86.4 tr) */
+export function formatCompactVND(value: number): string {
+  if (value >= 1_000_000_000) return `${(value / 1_000_000_000).toFixed(2)} tỷ`;
+  if (value >= 1_000_000) return `${(value / 1_000_000).toFixed(1)} tr`;
+  return formatVND(value);
+}

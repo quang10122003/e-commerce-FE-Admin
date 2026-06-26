@@ -1,6 +1,6 @@
 import { Tag } from "lucide-react";
 import { AdminCategoryOverviewResponse } from "@/types/categories";
-import { formatLocalDate } from "@/lib/util/formatDateTime";
+import { formatLocalDate } from "@/lib/util/Date";
 
 type CategoryQuickListProps = {
   data: AdminCategoryOverviewResponse | null

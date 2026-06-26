@@ -20,6 +20,7 @@ export async function getAdminOrders(
   try {
     const result = await serverPrivateFetch<AdminOrdersResponse>(
       buildAdminOrdersBackendPath(buildAdminOrdersQueryParams(filters)),
+      
     );
 
     return {

@@ -13,7 +13,7 @@ import {
 import { useDebouncedFormSubmit } from "@/hooks/use-debounced-form-submit";
 import { getApiErrorMessage } from "@/lib/util/apiError";
 import { formatCurrency } from "@/lib/util/formatCurrency";
-import { formatLocalDateTime } from "@/lib/util/formatDateTime";
+import { formatLocalDateTime } from "@/lib/util/Date";
 import type { AdminOrderItem, AdminOrdersFilters, OrderStatus } from "@/types/order";
 import { StatusBadge } from "../StatusBadge";
 

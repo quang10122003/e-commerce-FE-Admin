@@ -7,7 +7,7 @@ import { useDeleteCategoryMutation } from "@/client/api/backend-api";
 import { useNotification } from "@/components/ui/BrowserNotification";
 import { getApiErrorMessage } from "@/lib/util/apiError";
 import { CategoryImagePreview } from "./CategoryImagePreview";
-import { formatLocalDateTime } from "@/lib/util/formatDateTime";
+import { formatLocalDateTime } from "@/lib/util/Date";
 import { CategorySummaryResponse } from "@/types/categories";
 import { Clock3 } from "lucide-react";
 

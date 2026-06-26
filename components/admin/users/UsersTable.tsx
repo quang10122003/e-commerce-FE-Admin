@@ -1,5 +1,5 @@
 import { StatusBadge } from "@/components/admin/StatusBadge";
-import { formatLocalDate } from "@/lib/util/formatDateTime";
+import { formatLocalDate } from "@/lib/util/Date";
 import type { UserItem } from "@/types/users";
 import { UsersTableActions } from "./UsersTableActions";
 

@@ -11,7 +11,7 @@ import { StatusBadge } from "@/components/admin/StatusBadge";
 import { Loading } from "@/components/ui/Loading";
 import { createAdminDashboardViewModel } from "@/features/dashboard/mappers/admin-dashboard-view-model";
 import { formatCompactCurrency, formatCurrency } from "@/lib/util/formatCurrency";
-import { formatLocalDate, formatLocalDateTime } from "@/lib/util/formatDateTime";
+import { formatLocalDate, formatLocalDateTime } from "@/lib/util/Date";
 import type { AdminOverviewResponse } from "@/types/overview";
 
 type DashboardPageProps = {

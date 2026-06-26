@@ -7,6 +7,7 @@ import {
   Package,
   ShoppingBag,
   Users,
+  ChartNoAxesCombined
 } from "lucide-react";
 
 export type NavItem = {
@@ -23,6 +24,7 @@ export const navItems: NavItem[] = [
   { href: "/admin/orders", label: "Orders", icon: ShoppingBag },
   { href: "/admin/payments", label: "Payments", icon: CreditCard },
   { href: "/admin/chat", label: "Chat", icon: MessageSquareText },
+  { href: "/admin/revenue", label: "revenue", icon: ChartNoAxesCombined },
 ];
 
 export function resolvePageTitle(pathname: string) {
