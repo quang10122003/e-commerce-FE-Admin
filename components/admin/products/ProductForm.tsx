@@ -211,10 +211,14 @@ export function ProductForm({
       const file = files?.[0];
 
       if (!file) {
-        return true;
+        return isCreate ? "Vui lòng chọn thumbnail" : true;
       }
 
-      return file.type.startsWith("image/") || "File thumbnail phai la anh";
+      if (!file.type.startsWith("image/")) {
+        return "File thumbnail phải là ảnh";
+      }
+
+      return true;
     },
   });
 
@@ -225,7 +229,7 @@ export function ProductForm({
 
       return (
         selectedFiles.every((file) => file.type.startsWith("image/")) ||
-        "Tat ca file trong danh sach phai la anh"
+        "Tất cả file trong danh sách phải là ảnh"
       );
     },
   });
@@ -363,11 +367,18 @@ export function ProductForm({
                   placeholder="Vi du: iPhone 16 Pro 256GB"
                   type="text"
                   {...register("name", {
-                    required: "Vui long nhap ten product",
+                    required: "Vui lòng nhập tên sản phẩm",
                     minLength: {
                       value: 2,
-                      message: "Ten product phai co it nhat 2 ky tu",
+                      message: "Tên sản phẩm phải có ít nhất 2 ký tự",
                     },
+                    maxLength: {
+                      value: 50,
+                      message: "Tên sản phẩm nhiều nhất 50 ký tự",
+                    },
+                    validate: (value) =>
+                      value.trim().length >= 2 ||
+                      "Tên sản phẩm phải có ít nhất 2 ký tự",
                   })}
                 />
                 {errors.name && (
@@ -382,10 +393,9 @@ export function ProductForm({
                   disabled={isIdle}
                   placeholder="Mo ta ngan gon ve product"
                   {...register("desc", {
-                    required: "Vui long nhap mo ta product",
-                    minLength: {
-                      value: 8,
-                      message: "Mo ta phai co it nhat 8 ky tu",
+                    maxLength: {
+                      value: 100,
+                      message: "Mô tả không quá 100 ký tự",
                     },
                   })}
                 />
@@ -403,12 +413,14 @@ export function ProductForm({
                   placeholder="31990000"
                   type="number"
                   {...register("price", {
-                    required: "Vui long nhap gia",
+                    required: "Vui lòng nhập giá",
                     valueAsNumber: true,
                     min: {
                       value: 0,
-                      message: "Gia khong duoc am",
+                      message: "Giá không được âm",
                     },
+                    validate: (value) =>
+                      !Number.isNaN(value) || "Giá không hợp lệ",
                   })}
                 />
                 {errors.price && (
@@ -421,18 +433,18 @@ export function ProductForm({
                 <input
                   className="field-input"
                   disabled={isIdle}
-                  min={0}
+                  min={1}
                   placeholder="12"
                   type="number"
                   {...register("stock", {
-                    required: "Vui long nhap stock",
+                    required: "Vui lòng nhập stock",
                     valueAsNumber: true,
                     min: {
-                      value: 0,
-                      message: "Stock khong duoc am",
+                      value: 1,
+                      message: "Stock phải lớn hơn 0",
                     },
                     validate: (value) =>
-                      Number.isInteger(value) || "Stock phai la so nguyen",
+                      Number.isInteger(value) || "Stock phải là số nguyên",
                   })}
                 />
                 {errors.stock && (

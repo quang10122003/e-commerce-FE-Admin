@@ -1,4 +1,4 @@
-export type OrderStatus = "PENDING" | "SHIPPING" | "COMPLETED" | "CANCELLED";
+export type OrderStatus = "PENDING" | "CONFIRMED" | "SHIPPING" | "COMPLETED" | "CANCELLED";
 
 export type OrderStatusFilter = OrderStatus | "ALL";
 

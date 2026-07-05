@@ -10,7 +10,8 @@ export function buildAuthRefreshRoute(nextPath: string) {
 
 // Chặn vòng lặp refresh vô hạn khi backend vẫn từ chối request.
 export function hasAuthRefreshMarker(path: string) {
-  const url = new URL(path, "http://localhost");
+  const domain = process.env.NEXT_PUBLIC_DOMAIN
+  const url = new URL(path, domain);
 
   return url.searchParams.get(AUTH_REFRESHED_SEARCH_PARAM) === "1";
 }

@@ -145,11 +145,18 @@ export function UserEditPanel({
             placeholder="Nguyen Van B"
             type="text"
             {...register("fullName", {
-              minLength: {
-                message: "Full name phải có ít nhất 2 ký tự",
-                value: 2,
-              },
               required: "Vui lòng nhập full name",
+              minLength: {
+                value: 2,
+                message: "Full name phải có ít nhất 2 ký tự",
+              },
+              maxLength: {
+                value: 255,
+                message: "Full name không quá 255 ký tự",
+              },
+              validate: (value) =>
+                value.trim().length >= 2 ||
+                "Full name phải có ít nhất 2 ký tự",
             })}
           />
           {errors.fullName ? (

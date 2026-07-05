@@ -19,9 +19,14 @@ export function getAdminOrderStatusActions(
       }
 
       return [
-        { label: "Giao hàng", status: "SHIPPING", tone: "default" },
+        { label: "xác nhận đơn hàng", status: "CONFIRMED", tone: "default" },
         { label: "Hủy đơn", status: "CANCELLED", tone: "danger" },
       ];
+    case "CONFIRMED":
+      return[
+        { label: "giao hàng", status: "SHIPPING", tone: "default" },
+        { label: "Hủy đơn", status: "CANCELLED", tone: "danger" },
+      ]
     case "SHIPPING":
       return [
         { label: "Hoàn tất", status: "COMPLETED", tone: "default" },

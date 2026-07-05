@@ -130,11 +130,9 @@ export function LoginPageClient() {
                 autoComplete="current-password"
                 className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 outline-none focus:border-blue-400"
                 {...register("password", {
-                  minLength: {
-                    message: "Mật khẩu tối thiểu 6 ký tự",
-                    value: 6,
-                  },
                   required: "Vui lòng điền mật khẩu",
+                  validate: (value) =>
+                    value.trim().length > 0 || "Mật khẩu không được để trống",
                 })}
               />
               {errors.password && (

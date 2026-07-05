@@ -100,12 +100,15 @@ export function CategoryForm({ mode, categoryEdit }: CategoryFormProps) {
     validate: (files) => {
       const file = files?.[0];
 
-      // Create bắt buộc phải có ảnh, còn edit được phép bỏ trống để giữ ảnh hiện tại.
       if (!file) {
         return isCreate ? "Vui lòng chọn ảnh danh mục" : true;
       }
 
-      return file.type.startsWith("image/") || "File được chọn phải là ảnh";
+      if (!file.type.startsWith("image/")) {
+        return "File được chọn phải là ảnh";
+      }
+
+      return true;
     },
   });
 
@@ -176,9 +179,8 @@ export function CategoryForm({ mode, categoryEdit }: CategoryFormProps) {
 
   return (
     <div
-      className={`panel relative transition ${
-        isIdle ? "opacity-60 pointer-events-none" : ""
-      }`}
+      className={`panel relative transition ${isIdle ? "opacity-60 pointer-events-none" : ""
+        }`}
     >
       {isIdle && (
         <div className="absolute inset-0 z-10 flex items-center justify-center rounded-xl bg-white/40 backdrop-blur-[1px]">
@@ -213,6 +215,13 @@ export function CategoryForm({ mode, categoryEdit }: CategoryFormProps) {
                 value: 2,
                 message: "Tên danh mục phải có ít nhất 2 ký tự",
               },
+              maxLength: {
+                value: 120,
+                message: "Tên danh mục không quá 120 ký tự",
+              },
+              validate: (value) =>
+                value.trim().length >= 2 ||
+                "Tên danh mục phải có ít nhất 2 ký tự",
             })}
           />
 
@@ -223,7 +232,7 @@ export function CategoryForm({ mode, categoryEdit }: CategoryFormProps) {
           )}
         </label>
 
-        <div className="space-y-2 text-sm">
+        <div className="block space-y-1 text-sm">
           <div className="flex flex-wrap items-center gap-2">
             <span className="font-medium text-slate-700">
               Ảnh danh mục
