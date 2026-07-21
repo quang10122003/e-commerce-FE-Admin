@@ -228,11 +228,7 @@ export async function serverPrivateFetch<TData>(
     : false;
 
   if (!accessToken && session.refreshToken) {
-    // Tự phục hồi khi access token mất nhưng refresh token còn hợp lệ.
-    if (refreshRedirectPath && canRedirectToRefresh) {
-      redirect(buildAuthRefreshRoute(refreshRedirectPath));
-    }
-
+    // Tự phục hồi trong request hiện tại; proxy chịu trách nhiệm ghi cookie mới cho browser.
     accessToken = (await refreshAccessToken(session.refreshToken)) ?? undefined;
   }
 

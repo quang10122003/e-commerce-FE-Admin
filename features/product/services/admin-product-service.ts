@@ -6,9 +6,9 @@ import {
   buildAdminProductsQueryParams,
 } from "@/server/admin-products";
 import { serverPrivateFetch } from "@/server/backend-fetch";
+import { rethrowSettledNextFrameworkErrors } from "@/server/next-framework-error";
 import type { CategorySummaryResponse } from "@/types/categories";
 import type { AdminProductListData, AdminProductsFilters } from "@/types/product";
-import { RevenueFilters } from "@/types/revenue";
 
 const CATEGORY_API = "admin/categorie";
 
@@ -30,13 +30,17 @@ type AdminProductInitialResult = {
 // Gọi song song API product và category để khởi tạo list, filter và form.
 export async function getAdminProductInitialData(
   filters: AdminProductsFilters,
+  refreshRedirectPath?: string,
 ): Promise<AdminProductInitialResult> {
   const [dataProduct, dataCategory] = await Promise.allSettled([
     serverPrivateFetch<AdminProductListData>(
       buildAdminProductsBackendPath(buildAdminProductsQueryParams(filters)),
+      { refreshRedirectPath },
     ),
-    serverPrivateFetch<CategorySummaryResponse[]>(CATEGORY_API),
+    serverPrivateFetch<CategorySummaryResponse[]>(CATEGORY_API, { refreshRedirectPath }),
   ]);
+
+  rethrowSettledNextFrameworkErrors([dataProduct, dataCategory]);
 
   return {
     data: {
@@ -52,5 +56,3 @@ export async function getAdminProductInitialData(
     },
   };
 }
-
-

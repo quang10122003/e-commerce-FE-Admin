@@ -4,6 +4,7 @@ import { PageHeader } from "@/components/admin/PageHeader";
 import { StatCard } from "@/components/admin/StatCard";
 import { getAdminOrders } from "@/features/order/services/admin-order-service";
 import { parseAdminOrdersFilters } from "@/server/admin-orders";
+import { buildPathWithSearchParams } from "@/server/auth-refresh-redirect";
 import { NextSearchParams } from "@/types/next";
 
 export default async function OrdersPage({
@@ -12,8 +13,10 @@ export default async function OrdersPage({
   searchParams: NextSearchParams;
 }) {
   const params = await searchParams;
+  const refreshRedirectPath = buildPathWithSearchParams("/admin/orders", params);
+
   const filters = parseAdminOrdersFilters(params);
-  const { data, error } = await getAdminOrders(filters);
+  const { data, error } = await getAdminOrders(filters, refreshRedirectPath);
   const orders = data?.item ?? null;
 
   return (

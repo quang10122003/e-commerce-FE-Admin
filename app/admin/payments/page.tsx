@@ -5,6 +5,7 @@ import { PaymentTable } from "@/components/admin/payment/PaymentTable";
 import { createAdminPaymentViewModel } from "@/features/payment/mappers/admin-payment-view-model";
 import { getAdminPayments } from "@/features/payment/services/admin-payment-service";
 import { parseAdminPaymentsFilters } from "@/server/admin-payment";
+import { buildPathWithSearchParams } from "@/server/auth-refresh-redirect";
 import { NextSearchParams } from "@/types/next";
 
 export default async function PaymentsPage({
@@ -13,8 +14,10 @@ export default async function PaymentsPage({
   searchParams: NextSearchParams;
 }) {
   const params = await searchParams;
+  const refreshRedirectPath = buildPathWithSearchParams("/admin/payments", params);
+
   const filters = parseAdminPaymentsFilters(params);
-  const { data, error } = await getAdminPayments(filters);
+  const { data, error } = await getAdminPayments(filters, refreshRedirectPath);
   const { paymentStats, payments } = createAdminPaymentViewModel(data);
 
   return (

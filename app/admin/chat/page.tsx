@@ -7,6 +7,7 @@ import { createAdminChatViewModel } from "@/features/chat/mappers/admin-chat-vie
 import { getAdminChatInitialData } from "@/features/chat/services/admin-chat-service";
 import { buildChatPageHref } from "@/lib/admin/chat-url";
 import { readSearchParam } from "@/lib/util/readSearchParam";
+import { buildPathWithSearchParams } from "@/server/auth-refresh-redirect";
 import type { NextSearchParams } from "@/types/next";
 
 // Đọc room được chọn từ URL và bỏ qua giá trị không hợp lệ.
@@ -22,8 +23,13 @@ export default async function ChatPage({
   searchParams: NextSearchParams;
 }) {
   const params = await searchParams;
+  const refreshRedirectPath = buildPathWithSearchParams("/admin/chat", params);
+
   const selectedRoomId = parseSelectedRoomId(params);
-  const { data, error } = await getAdminChatInitialData(selectedRoomId);
+  const { data, error } = await getAdminChatInitialData(
+    selectedRoomId,
+    refreshRedirectPath,
+  );
   const { selectedRoomExists, stats } = createAdminChatViewModel(
     data,
     selectedRoomId,

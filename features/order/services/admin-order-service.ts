@@ -6,6 +6,7 @@ import {
   buildAdminOrdersQueryParams,
 } from "@/server/admin-orders";
 import { serverPrivateFetch } from "@/server/backend-fetch";
+import { rethrowNextFrameworkError } from "@/server/next-framework-error";
 import type { AdminOrdersFilters, AdminOrdersResponse } from "@/types/order";
 
 type AdminOrdersResult = {
@@ -16,11 +17,12 @@ type AdminOrdersResult = {
 // Gọi API lấy danh sách đơn hàng theo bộ lọc trang orders.
 export async function getAdminOrders(
   filters: AdminOrdersFilters,
+  refreshRedirectPath?: string,
 ): Promise<AdminOrdersResult> {
   try {
     const result = await serverPrivateFetch<AdminOrdersResponse>(
       buildAdminOrdersBackendPath(buildAdminOrdersQueryParams(filters)),
-      
+      { refreshRedirectPath },
     );
 
     return {
@@ -28,6 +30,8 @@ export async function getAdminOrders(
       error: null,
     };
   } catch (err) {
+    rethrowNextFrameworkError(err);
+
     return {
       data: null,
       error: getApiErrorMessage(err, "Không thể tải danh sách đơn hàng."),

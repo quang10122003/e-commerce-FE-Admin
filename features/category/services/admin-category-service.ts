@@ -2,6 +2,7 @@ import "server-only";
 
 import { getApiErrorMessage } from "@/lib/util/apiError";
 import { serverPrivateFetch } from "@/server/backend-fetch";
+import { rethrowSettledNextFrameworkErrors } from "@/server/next-framework-error";
 import type {
   AdminCategoryOverviewResponse,
   CategorySummaryResponse,
@@ -26,11 +27,19 @@ type AdminCategoriesInitialResult = {
 };
 
 // Gọi song song API danh mục và overview để khởi tạo trang categories.
-export async function getAdminCategoriesInitialData(): Promise<AdminCategoriesInitialResult> {
+export async function getAdminCategoriesInitialData(
+  refreshRedirectPath?: string,
+): Promise<AdminCategoriesInitialResult> {
   const [categoryResult, overviewResult] = await Promise.allSettled([
-    serverPrivateFetch<CategorySummaryResponse[]>(CATEGORIES_URL),
-    serverPrivateFetch<AdminCategoryOverviewResponse>(CATEGORIES_OVERVIEW_URL),
+    serverPrivateFetch<CategorySummaryResponse[]>(CATEGORIES_URL, {
+      refreshRedirectPath,
+    }),
+    serverPrivateFetch<AdminCategoryOverviewResponse>(CATEGORIES_OVERVIEW_URL, {
+      refreshRedirectPath,
+    }),
   ]);
+
+  rethrowSettledNextFrameworkErrors([categoryResult, overviewResult]);
 
   return {
     data: {

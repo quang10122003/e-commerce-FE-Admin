@@ -6,6 +6,7 @@ import {
   buildAdminUsersQueryParams,
 } from "@/server/admin-users";
 import { serverPrivateFetch } from "@/server/backend-fetch";
+import { rethrowSettledNextFrameworkErrors } from "@/server/next-framework-error";
 import type { Role } from "@/types/roles";
 import type { AdminUsersFilters, UserListData } from "@/types/users";
 
@@ -29,13 +30,17 @@ type AdminUsersInitialResult = {
 // Gọi song song API users và roles để khởi tạo bảng, filter và form edit.
 export async function getAdminUsersInitialData(
   filters: AdminUsersFilters,
+  refreshRedirectPath?: string,
 ): Promise<AdminUsersInitialResult> {
   const [usersResult, rolesResult] = await Promise.allSettled([
     serverPrivateFetch<UserListData>(
       buildAdminUsersBackendPath(buildAdminUsersQueryParams(filters)),
+      { refreshRedirectPath },
     ),
-    serverPrivateFetch<Role[]>(ROLES_API),
+    serverPrivateFetch<Role[]>(ROLES_API, { refreshRedirectPath }),
   ]);
+
+  rethrowSettledNextFrameworkErrors([usersResult, rolesResult]);
 
   return {
     data: {

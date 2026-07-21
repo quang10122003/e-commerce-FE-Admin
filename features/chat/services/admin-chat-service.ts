@@ -2,6 +2,7 @@ import "server-only";
 
 import { getApiErrorMessage } from "@/lib/util/apiError";
 import { serverPrivateFetch } from "@/server/backend-fetch";
+import { rethrowSettledNextFrameworkErrors } from "@/server/next-framework-error";
 import type { ChatMessage, ChatRoom } from "@/types/chat";
 
 const ADMIN_CHAT_ROOMS_API = "/admin/chat/rooms";
@@ -24,13 +25,19 @@ type AdminChatInitialResult = {
 // Gọi API lấy danh sách room và tin nhắn của room đang chọn nếu có.
 export async function getAdminChatInitialData(
   selectedRoomId: number | null,
+  refreshRedirectPath?: string,
 ): Promise<AdminChatInitialResult> {
   const [roomsResult, messagesResult] = await Promise.allSettled([
-    serverPrivateFetch<ChatRoom[]>(ADMIN_CHAT_ROOMS_API),
+    serverPrivateFetch<ChatRoom[]>(ADMIN_CHAT_ROOMS_API, { refreshRedirectPath }),
     selectedRoomId
-      ? serverPrivateFetch<ChatMessage[]>(`/chat/rooms/${selectedRoomId}/messages`)
+      ? serverPrivateFetch<ChatMessage[]>(
+          `/chat/rooms/${selectedRoomId}/messages`,
+          { refreshRedirectPath },
+        )
       : Promise.resolve(null),
   ]);
+
+  rethrowSettledNextFrameworkErrors([roomsResult, messagesResult]);
 
   return {
     data: {
