@@ -19,7 +19,10 @@ export function createAdminChatStompClient({
     connectHeaders: {
       Authorization: `Bearer ${ticket}`,
     },
-    debug: process.env.NODE_ENV === "development" ? console.log : undefined,
+    // Luôn luôn là function — không bao giờ để undefined
+    debug: process.env.NODE_ENV === "development"
+      ? (msg: string) => console.log(msg)
+      : () => { },
     heartbeatIncoming: 10000,
     heartbeatOutgoing: 10000,
     onConnect,
