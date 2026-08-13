@@ -30,7 +30,6 @@ export function getAdminOrderStatusActions(
     case "SHIPPING":
       return [
         { label: "Hoàn tất", status: "COMPLETED", tone: "default" },
-        { label: "Hủy đơn", status: "CANCELLED", tone: "danger" },
       ];
     case "COMPLETED":
     case "CANCELLED":
